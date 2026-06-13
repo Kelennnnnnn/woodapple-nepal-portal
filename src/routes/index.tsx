@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ArrowRight, Search, Shield, Mountain, Users, Heart, Star, Calendar } from "lucide-react";
 import heroImg from "@/assets/hero-mountains.jpg";
-import { tours } from "@/data/tours";
 import { TourCard } from "@/components/tour-card";
+import { featuredToursQuery } from "@/lib/tours";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Hand-crafted Himalayan treks, cultural journeys and jungle safaris from Kathmandu." },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(featuredToursQuery()),
   component: HomePage,
 });
 
@@ -36,18 +38,13 @@ const blogPosts = [
 ];
 
 function HomePage() {
+  const { data: tours } = useSuspenseQuery(featuredToursQuery());
+
   return (
     <>
-      {/* HERO */}
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <img
-            src={heroImg}
-            alt="Himalayan peaks at sunrise with prayer flags"
-            width={1920}
-            height={1080}
-            className="h-full w-full object-cover"
-          />
+          <img src={heroImg} alt="Himalayan peaks at sunrise with prayer flags" width={1920} height={1080} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/65" />
         </div>
 
@@ -64,30 +61,17 @@ function HomePage() {
               Himalayan treks, ancient cities and wild jungles — designed and guided by people who call this country home.
             </p>
 
-            {/* Search */}
             <div className="mt-8 rounded-2xl bg-background/95 p-2 shadow-xl backdrop-blur sm:rounded-full">
-              <form
-                onSubmit={(e) => e.preventDefault()}
-                className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto] sm:gap-0"
-              >
+              <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto] sm:gap-0">
                 <label className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm sm:rounded-full">
                   <Search className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    placeholder="Where? (Everest, Annapurna…)"
-                    className="w-full bg-transparent placeholder:text-muted-foreground focus:outline-none"
-                  />
+                  <input placeholder="Where? (Everest, Annapurna…)" className="w-full bg-transparent placeholder:text-muted-foreground focus:outline-none" />
                 </label>
                 <label className="flex items-center gap-2 border-t border-border px-4 py-3 text-sm sm:border-l sm:border-t-0">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    placeholder="When? (Mar – May)"
-                    className="w-full bg-transparent placeholder:text-muted-foreground focus:outline-none"
-                  />
+                  <input placeholder="When? (Mar – May)" className="w-full bg-transparent placeholder:text-muted-foreground focus:outline-none" />
                 </label>
-                <Link
-                  to="/tours"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:rounded-full"
-                >
+                <Link to="/tours" className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:rounded-full">
                   Find a trip <ArrowRight className="h-4 w-4" />
                 </Link>
               </form>
@@ -107,38 +91,27 @@ function HomePage() {
         </div>
       </section>
 
-      {/* FEATURED TOURS */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto]">
           <div>
             <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Featured journeys</div>
-            <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">
-              Hand-crafted tours across Nepal
-            </h2>
+            <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Hand-crafted tours across Nepal</h2>
           </div>
-          <Link
-            to="/tours"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-          >
+          <Link to="/tours" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
             View all tours <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {tours.slice(0, 6).map((t) => (
-            <TourCard key={t.slug} tour={t} />
-          ))}
+          {tours.map((t) => <TourCard key={t.id} tour={t} />)}
         </div>
       </section>
 
-      {/* WHY US */}
       <section className="bg-[color:var(--cream)] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
             <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Why Woodapple</div>
-            <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">
-              The local, licensed way to see Nepal
-            </h2>
+            <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">The local, licensed way to see Nepal</h2>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {trustPoints.map(({ icon: Icon, title, body }) => (
@@ -154,16 +127,9 @@ function HomePage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto]">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Travelers say</div>
-            <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">
-              Stories from the trail
-            </h2>
-          </div>
-        </div>
+        <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Travelers say</div>
+        <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Stories from the trail</h2>
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {testimonials.map((t) => (
             <figure key={t.name} className="rounded-2xl bg-card p-7 ring-1 ring-border/60">
@@ -172,9 +138,7 @@ function HomePage() {
                   <Star key={i} className="h-4 w-4 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />
                 ))}
               </div>
-              <blockquote className="mt-4 font-display text-lg leading-snug text-foreground">
-                “{t.text}”
-              </blockquote>
+              <blockquote className="mt-4 font-display text-lg leading-snug text-foreground">“{t.text}”</blockquote>
               <figcaption className="mt-5 text-sm text-muted-foreground">
                 <span className="font-semibold text-foreground">{t.name}</span> · {t.country}
               </figcaption>
@@ -183,27 +147,15 @@ function HomePage() {
         </div>
       </section>
 
-      {/* LATEST FROM NEPAL */}
       <section className="bg-[color:var(--cream)] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto]">
-            <div>
-              <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Latest from Nepal</div>
-              <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">
-                Notes from our guides
-              </h2>
-            </div>
-            <a href="#" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-              Read the blog <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
+          <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Latest from Nepal</div>
+          <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Notes from our guides</h2>
           <div className="mt-10 grid gap-6 lg:grid-cols-3">
             {blogPosts.map((p) => (
               <a key={p.title} href="#" className="group block rounded-2xl bg-background p-6 ring-1 ring-border/60 transition hover:shadow-md">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">{p.date}</div>
-                <h3 className="mt-2 font-display text-xl font-semibold leading-snug group-hover:text-primary">
-                  {p.title}
-                </h3>
+                <h3 className="mt-2 font-display text-xl font-semibold leading-snug group-hover:text-primary">{p.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.excerpt}</p>
                 <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
                   Read more <ArrowRight className="h-4 w-4" />
@@ -214,22 +166,14 @@ function HomePage() {
         </div>
       </section>
 
-      {/* CTA BAND */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-3xl bg-[color:var(--mountain)] px-8 py-14 text-mountain-foreground sm:px-14">
           <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
             <div>
-              <h2 className="font-display text-3xl font-semibold leading-tight sm:text-4xl">
-                Dreaming of the Himalaya?
-              </h2>
-              <p className="mt-2 max-w-xl text-white/80">
-                Tell us when you'd like to come and what you'd like to see. We'll send a custom itinerary within 24 hours.
-              </p>
+              <h2 className="font-display text-3xl font-semibold leading-tight sm:text-4xl">Dreaming of the Himalaya?</h2>
+              <p className="mt-2 max-w-xl text-white/80">Tell us when you'd like to come and what you'd like to see. We'll send a custom itinerary within 24 hours.</p>
             </div>
-            <Link
-              to="/contact"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[color:var(--saffron)] px-6 py-3 text-sm font-semibold text-[color:var(--foreground)] hover:opacity-90"
-            >
+            <Link to="/contact" className="inline-flex items-center justify-center gap-2 rounded-full bg-[color:var(--saffron)] px-6 py-3 text-sm font-semibold text-[color:var(--foreground)] hover:opacity-90">
               Plan My Trip <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

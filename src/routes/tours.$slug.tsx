@@ -1,21 +1,23 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { Clock, MapPin, Mountain, ArrowLeft, Check } from "lucide-react";
-import { getTour, tours, type Tour } from "@/data/tours";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Clock, MapPin, Mountain, ArrowLeft, Check, X, Users, Calendar, ChevronDown } from "lucide-react";
+import { tourBySlugQuery, FALLBACK_IMAGE } from "@/lib/tours";
 
 export const Route = createFileRoute("/tours/$slug")({
-  loader: ({ params }) => {
-    const tour = getTour(params.slug);
+  loader: async ({ params, context }) => {
+    const tour = await context.queryClient.ensureQueryData(tourBySlugQuery(params.slug));
     if (!tour) throw notFound();
-    return { tour };
+    return tour;
   },
   head: ({ loaderData }) => ({
     meta: loaderData
       ? [
-          { title: `${loaderData.tour.title} — Woodapple Tours` },
-          { name: "description", content: loaderData.tour.short },
-          { property: "og:title", content: loaderData.tour.title },
-          { property: "og:description", content: loaderData.tour.short },
-          { property: "og:image", content: loaderData.tour.image },
+          { title: `${loaderData.title} — Woodapple Tours` },
+          { name: "description", content: loaderData.short_description },
+          { property: "og:title", content: loaderData.title },
+          { property: "og:description", content: loaderData.short_description },
+          { property: "og:image", content: loaderData.images[0] ?? FALLBACK_IMAGE },
         ]
       : [],
   }),
@@ -29,121 +31,197 @@ export const Route = createFileRoute("/tours/$slug")({
 });
 
 function TourDetail() {
-  const { tour } = Route.useLoaderData() as { tour: Tour };
-  const related = tours.filter((t) => t.slug !== tour.slug).slice(0, 3);
+  const { slug } = Route.useParams();
+  const { data: tourData } = useSuspenseQuery(tourBySlugQuery(slug));
+  const tour = tourData!;
+  const [activeImg, setActiveImg] = useState(0);
+  const images = tour.images.length > 0 ? tour.images : [FALLBACK_IMAGE];
 
   return (
     <>
-      <section className="relative isolate">
-        <div className="absolute inset-0 -z-10">
-          <img src={tour.image} alt={tour.title} width={1920} height={1080} className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/40" />
-        </div>
-        <div className="mx-auto max-w-7xl px-4 pb-16 pt-32 text-[color:var(--cream)] sm:px-6 sm:pt-40 lg:px-8">
-          <Link to="/tours" className="inline-flex items-center gap-1.5 text-sm opacity-90 hover:opacity-100">
+      <section className="border-b border-border bg-[color:var(--cream)]">
+        <div className="mx-auto max-w-7xl px-4 pb-10 pt-28 sm:px-6 sm:pt-32 lg:px-8">
+          <Link to="/tours" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-4 w-4" /> All tours
           </Link>
-          <div className="mt-3 flex items-center gap-2 text-sm opacity-90">
-            <MapPin className="h-4 w-4" /> {tour.region}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
+              {tour.category}
+            </span>
+            <span className="text-sm text-muted-foreground">{tour.best_season}</span>
           </div>
-          <h1 className="mt-2 max-w-3xl font-display text-4xl font-bold leading-tight sm:text-6xl">
+          <h1 className="mt-3 max-w-3xl font-display text-4xl font-bold leading-tight sm:text-5xl">
             {tour.title}
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-white/85">{tour.short}</p>
-          <div className="mt-6 flex flex-wrap gap-3 text-sm">
-            {[
-              { icon: Clock, label: tour.duration },
-              { icon: Mountain, label: tour.difficulty },
-              { icon: MapPin, label: tour.region },
-            ].map(({ icon: Icon, label }) => (
-              <span key={label} className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 backdrop-blur">
-                <Icon className="h-4 w-4" /> {label}
-              </span>
+          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{tour.short_description}</p>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {/* Gallery */}
+        <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
+          <div className="aspect-[16/10] overflow-hidden rounded-2xl bg-muted">
+            <img src={images[activeImg]} alt={tour.title} className="h-full w-full object-cover" />
+          </div>
+          <div className="flex gap-3 overflow-x-auto sm:flex-col">
+            {images.map((src, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveImg(i)}
+                className={`h-20 w-28 shrink-0 overflow-hidden rounded-lg ring-2 transition sm:w-full ${
+                  i === activeImg ? "ring-primary" : "ring-transparent hover:ring-border"
+                }`}
+              >
+                <img src={src} alt="" className="h-full w-full object-cover" />
+              </button>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_360px]">
           <div className="space-y-12">
+            {/* Overview */}
             <div>
-              <h2 className="font-display text-2xl font-semibold">Trip highlights</h2>
-              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                {tour.highlights.map((h) => (
-                  <li key={h} className="flex items-start gap-2 text-sm">
-                    <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                      <Check className="h-3 w-3" />
-                    </span>
-                    {h}
-                  </li>
+              <h2 className="font-display text-2xl font-semibold">Overview</h2>
+              <p className="mt-3 text-base leading-relaxed text-foreground/85">{tour.full_description}</p>
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { icon: Clock, label: "Duration", value: `${tour.duration_days} days` },
+                  { icon: Mountain, label: "Difficulty", value: tour.difficulty },
+                  { icon: Users, label: "Group size", value: tour.group_size },
+                  { icon: Calendar, label: "Best season", value: tour.best_season },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="rounded-xl bg-card p-4 ring-1 ring-border/60">
+                    <Icon className="h-4 w-4 text-primary" />
+                    <div className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+                    <div className="text-sm font-semibold">{value}</div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
 
-            <div>
-              <h2 className="font-display text-2xl font-semibold">Day-by-day itinerary</h2>
-              <ol className="mt-6 space-y-6 border-l border-border pl-6">
-                {tour.itinerary.map((d) => (
-                  <li key={d.day} className="relative">
-                    <span className="absolute -left-[34px] top-0 grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                      {d.day}
-                    </span>
-                    <h3 className="font-display text-lg font-semibold">{d.title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{d.description}</p>
-                  </li>
-                ))}
-                <li className="relative text-sm italic text-muted-foreground">
-                  <span className="absolute -left-[30px] top-1 h-2 w-2 rounded-full bg-border" />
-                  Full itinerary sent on inquiry.
-                </li>
-              </ol>
+            {/* Itinerary */}
+            {tour.itinerary.length > 0 && (
+              <div>
+                <h2 className="font-display text-2xl font-semibold">Day-by-day itinerary</h2>
+                <div className="mt-4 divide-y divide-border rounded-2xl bg-card ring-1 ring-border/60">
+                  {tour.itinerary.map((d) => (
+                    <Accordion
+                      key={d.day}
+                      title={
+                        <div className="flex items-center gap-3">
+                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                            {d.day}
+                          </span>
+                          <span className="font-display text-base font-semibold">{d.title}</span>
+                        </div>
+                      }
+                    >
+                      <p className="text-sm leading-relaxed text-muted-foreground">{d.description}</p>
+                    </Accordion>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Included / Excluded */}
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="rounded-2xl bg-card p-6 ring-1 ring-border/60">
+                <h3 className="font-display text-lg font-semibold">What's included</h3>
+                <ul className="mt-4 space-y-2 text-sm">
+                  {tour.included.map((i) => (
+                    <li key={i} className="flex gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{i}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-2xl bg-card p-6 ring-1 ring-border/60">
+                <h3 className="font-display text-lg font-semibold">Not included</h3>
+                <ul className="mt-4 space-y-2 text-sm">
+                  {tour.excluded.map((i) => (
+                    <li key={i} className="flex gap-2 text-muted-foreground">
+                      <X className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>{i}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
+
+            {/* FAQ */}
+            {tour.faq.length > 0 && (
+              <div>
+                <h2 className="font-display text-2xl font-semibold">Frequently asked questions</h2>
+                <div className="mt-4 divide-y divide-border rounded-2xl bg-card ring-1 ring-border/60">
+                  {tour.faq.map((f, i) => (
+                    <Accordion key={i} title={<span className="text-left font-medium">{f.q}</span>}>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{f.a}</p>
+                    </Accordion>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Sticky booking sidebar */}
           <aside className="h-fit rounded-2xl bg-card p-6 ring-1 ring-border/60 lg:sticky lg:top-24">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">From</div>
-            <div className="font-display text-4xl font-semibold text-primary">${tour.priceUSD}</div>
+            <div className="font-display text-4xl font-semibold text-primary">${tour.price_usd}</div>
             <div className="text-sm text-muted-foreground">per person, twin sharing</div>
             <div className="mt-5 space-y-2 border-t border-border pt-5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Duration</span><span>{tour.duration}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Difficulty</span><span>{tour.difficulty}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Group size</span><span>2–10</span></div>
+              <Row label="Duration" value={`${tour.duration_days} days`} />
+              <Row label="Difficulty" value={tour.difficulty} />
+              <Row label="Group size" value={tour.group_size} />
+              <Row label="Best season" value={tour.best_season} />
             </div>
             <Link
               to="/contact"
               className="mt-6 flex w-full items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
-              Inquire about this trip
+              Book this trip
             </Link>
             <p className="mt-3 text-center text-xs text-muted-foreground">No deposit needed to inquire</p>
+
+            <div className="mt-6 rounded-xl bg-[color:var(--cream)] p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <MapPin className="h-4 w-4 text-primary" /> Need help deciding?
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Chat to our Kathmandu team. We reply within 24 hours.
+              </p>
+            </div>
           </aside>
         </div>
       </section>
-
-      <section className="bg-[color:var(--cream)] py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-2xl font-semibold">You may also like</h2>
-          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {related.map((t) => (
-              <Link
-                key={t.slug}
-                to="/tours/$slug"
-                params={{ slug: t.slug }}
-                className="group overflow-hidden rounded-2xl bg-background ring-1 ring-border/60"
-              >
-                <div className="aspect-[16/10] overflow-hidden">
-                  <img src={t.image} alt={t.title} loading="lazy" width={1024} height={640} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                </div>
-                <div className="p-5">
-                  <h3 className="font-display text-lg font-semibold group-hover:text-primary">{t.title}</h3>
-                  <div className="mt-1 text-sm text-muted-foreground">{t.duration} · From ${t.priceUSD}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
     </>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
+    </div>
+  );
+}
+
+function Accordion({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-muted/40"
+      >
+        <div className="min-w-0 flex-1">{title}</div>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="px-5 pb-5 pl-16">{children}</div>}
+    </div>
   );
 }
