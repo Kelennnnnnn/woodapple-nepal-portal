@@ -137,52 +137,56 @@ function AdminPage() {
         ))}
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
-        {toursQ.isLoading ? (
-          <div className="p-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Tour</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Days</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {(toursQ.data ?? []).map((t) => (
-                <tr key={t.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 font-medium">
-                      {t.featured && <Star className="h-3.5 w-3.5 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />}
-                      {t.title}
-                    </div>
-                    <div className="text-xs text-muted-foreground">/{t.slug}</div>
-                  </td>
-                  <td className="px-4 py-3 capitalize">{t.category}</td>
-                  <td className="px-4 py-3">{t.duration_days}</td>
-                  <td className="px-4 py-3">${t.price_usd}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button onClick={() => setEditing({ ...t })} className="rounded-md p-2 hover:bg-muted" aria-label="Edit">
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => { if (confirm(`Delete "${t.title}"? This cannot be undone.`)) deleteMut.mutate(t.id); }}
-                        className="rounded-md p-2 text-destructive hover:bg-destructive/10" aria-label="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+      {tab === "tours" ? (
+        <div className="mt-6 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
+          {toursQ.isLoading ? (
+            <div className="p-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">Tour</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Days</th>
+                  <th className="px-4 py-3">Price</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(toursQ.data ?? []).map((t) => (
+                  <tr key={t.id} className="hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        {t.featured && <Star className="h-3.5 w-3.5 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />}
+                        {t.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground">/{t.slug}</div>
+                    </td>
+                    <td className="px-4 py-3 capitalize">{t.category}</td>
+                    <td className="px-4 py-3">{t.duration_days}</td>
+                    <td className="px-4 py-3">${t.price_usd}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => setEditing({ ...t })} className="rounded-md p-2 hover:bg-muted" aria-label="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => { if (confirm(`Delete "${t.title}"? This cannot be undone.`)) deleteMut.mutate(t.id); }}
+                          className="rounded-md p-2 text-destructive hover:bg-destructive/10" aria-label="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ) : (
+        <InquiriesPanel />
+      )}
 
       {editing && (
         <TourEditor
