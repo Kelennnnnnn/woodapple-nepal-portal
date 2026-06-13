@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Clock, MapPin, Mountain, ArrowLeft, Check, X, Users, Calendar, ChevronDown } from "lucide-react";
 import { tourBySlugQuery, FALLBACK_IMAGE } from "@/lib/tours";
+import { InquiryForm } from "@/components/inquiry-form";
 
 export const Route = createFileRoute("/tours/$slug")({
   loader: async ({ params, context }) => {
@@ -178,21 +179,14 @@ function TourDetail() {
               <Row label="Group size" value={tour.group_size} />
               <Row label="Best season" value={tour.best_season} />
             </div>
-            <Link
-              to="/contact"
-              className="mt-6 flex w-full items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Book this trip
-            </Link>
-            <p className="mt-3 text-center text-xs text-muted-foreground">No deposit needed to inquire</p>
-
-            <div className="mt-6 rounded-xl bg-[color:var(--cream)] p-4">
+            <div className="mt-6 border-t border-border pt-5">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <MapPin className="h-4 w-4 text-primary" /> Need help deciding?
+                <MapPin className="h-4 w-4 text-primary" /> Inquire about this trip
               </div>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Chat to our Kathmandu team. We reply within 24 hours.
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">No deposit needed. We respond within 12 hours.</p>
+              <div className="mt-4">
+                <InquiryForm tourId={tour.id} tourTitle={tour.title} />
+              </div>
             </div>
           </aside>
         </div>
