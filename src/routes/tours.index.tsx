@@ -52,7 +52,7 @@ function ToursPage() {
   }, [tours, category, duration, price]);
 
   const update = (patch: Partial<{ category: typeof category; duration: typeof duration; price: typeof price }>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ search: (prev: typeof patch) => ({ ...prev, ...patch }) });
 
   return (
     <>
