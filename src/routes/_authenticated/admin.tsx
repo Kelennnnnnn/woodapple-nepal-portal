@@ -336,3 +336,153 @@ function TextareaField({ label, value, onChange, rows = 3, mono }: { label: stri
     </label>
   );
 }
+
+type Inquiry = {
+  id: string;
+  tour_id: string | null;
+  tour_title: string | null;
+  name: string;
+  email: string;
+  country: string | null;
+  travel_dates: string | null;
+  group_size: string | null;
+  message: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+const inquiriesQuery = queryOptions({
+  queryKey: ["inquiries"],
+  queryFn: async (): Promise<Inquiry[]> => {
+    const { data, error } = await supabase
+      .from("inquiries")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as Inquiry[];
+  },
+});
+
+function InquiriesPanel() {
+  const qc = useQueryClient();
+  const q = useQuery(inquiriesQuery);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const toggleRead = useMutation({
+    mutationFn: async ({ id, read }: { id: string; read: boolean }) => {
+      const { error } = await supabase.from("inquiries").update({ read }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["inquiries"] }),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("inquiries").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["inquiries"] }),
+  });
+
+  if (q.isLoading) {
+    return <div className="mt-6 rounded-2xl bg-card p-12 text-center ring-1 ring-border/60"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  const items = q.data ?? [];
+  if (items.length === 0) {
+    return (
+      <div className="mt-6 rounded-2xl bg-card p-16 text-center ring-1 ring-border/60">
+        <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
+        <p className="mt-3 font-medium">No inquiries yet</p>
+        <p className="mt-1 text-sm text-muted-foreground">Submissions from the website will appear here.</p>
+      </div>
+    );
+  }
+
+  const unreadCount = items.filter((i) => !i.read).length;
+
+  return (
+    <div className="mt-6 space-y-3">
+      <div className="text-sm text-muted-foreground">
+        {items.length} total · <span className="font-semibold text-primary">{unreadCount} unread</span>
+      </div>
+      <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
+        <ul className="divide-y divide-border">
+          {items.map((i) => {
+            const isOpen = openId === i.id;
+            return (
+              <li key={i.id} className={!i.read ? "bg-primary/[0.03]" : ""}>
+                <button
+                  onClick={() => {
+                    setOpenId(isOpen ? null : i.id);
+                    if (!i.read) toggleRead.mutate({ id: i.id, read: true });
+                  }}
+                  className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left hover:bg-muted/30"
+                >
+                  <span className={`grid h-8 w-8 place-items-center rounded-full ${i.read ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+                    {i.read ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2">
+                      <span className={`truncate text-sm ${i.read ? "font-medium" : "font-semibold"}`}>{i.name}</span>
+                      {!i.read && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase text-primary-foreground">New</span>}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {i.tour_title ?? "General inquiry"} · {i.email}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {new Date(i.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="space-y-3 border-t border-border bg-muted/20 px-4 py-4 text-sm">
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+                      <Detail label="Country" value={i.country} />
+                      <Detail label="Group size" value={i.group_size} />
+                      <Detail label="Travel dates" value={i.travel_dates} />
+                      <Detail label="Received" value={new Date(i.created_at).toLocaleString()} />
+                    </dl>
+                    {i.message && (
+                      <div>
+                        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Message</div>
+                        <p className="mt-1 whitespace-pre-wrap text-sm">{i.message}</p>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <a href={`mailto:${i.email}`} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
+                        Reply by email
+                      </a>
+                      <button
+                        onClick={() => toggleRead.mutate({ id: i.id, read: !i.read })}
+                        className="rounded-full border border-border px-4 py-2 text-xs hover:bg-muted"
+                      >
+                        Mark as {i.read ? "unread" : "read"}
+                      </button>
+                      <button
+                        onClick={() => { if (confirm("Delete this inquiry?")) del.mutate(i.id); }}
+                        className="rounded-full border border-border px-4 py-2 text-xs text-destructive hover:bg-destructive/10"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div>
+      <dt className="text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
+      <dd className="text-sm">{value || <span className="text-muted-foreground">—</span>}</dd>
+    </div>
+  );
+}
+
