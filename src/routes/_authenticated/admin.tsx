@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, queryOptions } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft } from "lucide-react";
+import { Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft, Mail, MailOpen, Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toursListQuery, type Tour, type TourCategory } from "@/lib/tours";
 
@@ -26,6 +26,7 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [editing, setEditing] = useState<TourDraft | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [tab, setTab] = useState<"tours" | "inquiries">("tours");
 
   useEffect(() => {
     (async () => {
@@ -103,17 +104,37 @@ function AdminPage() {
           <Link to="/" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-3 w-3" /> Back to website
           </Link>
-          <h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Tour admin</h1>
+          <h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Admin dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">Signed in as {userEmail}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button onClick={() => setEditing(emptyDraft)} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            <Plus className="h-4 w-4" /> New tour
-          </button>
+          {tab === "tours" && (
+            <button onClick={() => setEditing(emptyDraft)} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4" /> New tour
+            </button>
+          )}
           <button onClick={signOut} className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm hover:bg-muted">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>
+      </div>
+
+      <div className="mt-6 flex gap-1 border-b border-border">
+        {([
+          { id: "tours" as const, label: "Tours" },
+          { id: "inquiries" as const, label: "Inquiries" },
+        ]).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`relative px-4 py-2.5 text-sm font-medium transition ${
+              tab === t.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t.label}
+            {tab === t.id && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />}
+          </button>
+        ))}
       </div>
 
       <div className="mt-8 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
