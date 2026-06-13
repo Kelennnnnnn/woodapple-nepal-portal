@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Clock, MapPin, Mountain, ArrowLeft, Check } from "lucide-react";
-import { getTour, tours } from "@/data/tours";
+import { getTour, tours, type Tour } from "@/data/tours";
 
 export const Route = createFileRoute("/tours/$slug")({
   loader: ({ params }) => {
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/tours/$slug")({
 });
 
 function TourDetail() {
-  const { tour } = Route.useLoaderData();
+  const { tour } = Route.useLoaderData() as { tour: Tour };
   const related = tours.filter((t) => t.slug !== tour.slug).slice(0, 3);
 
   return (
