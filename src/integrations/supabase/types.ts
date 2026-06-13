@@ -14,16 +14,103 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      tours: {
+        Row: {
+          best_season: string
+          category: Database["public"]["Enums"]["tour_category"]
+          created_at: string
+          difficulty: string
+          duration_days: number
+          excluded: string[]
+          faq: Json
+          featured: boolean
+          full_description: string
+          group_size: string
+          id: string
+          images: string[]
+          included: string[]
+          itinerary: Json
+          price_usd: number
+          short_description: string
+          slug: string
+          title: string
+        }
+        Insert: {
+          best_season?: string
+          category?: Database["public"]["Enums"]["tour_category"]
+          created_at?: string
+          difficulty?: string
+          duration_days?: number
+          excluded?: string[]
+          faq?: Json
+          featured?: boolean
+          full_description?: string
+          group_size?: string
+          id?: string
+          images?: string[]
+          included?: string[]
+          itinerary?: Json
+          price_usd?: number
+          short_description?: string
+          slug: string
+          title: string
+        }
+        Update: {
+          best_season?: string
+          category?: Database["public"]["Enums"]["tour_category"]
+          created_at?: string
+          difficulty?: string
+          duration_days?: number
+          excluded?: string[]
+          faq?: Json
+          featured?: boolean
+          full_description?: string
+          group_size?: string
+          id?: string
+          images?: string[]
+          included?: string[]
+          itinerary?: Json
+          price_usd?: number
+          short_description?: string
+          slug?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      tour_category: "trekking" | "cultural" | "adventure" | "wildlife"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +237,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      tour_category: ["trekking", "cultural", "adventure", "wildlife"],
+    },
   },
 } as const
