@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      inquiries: {
+        Row: {
+          country: string | null
+          created_at: string
+          email: string
+          group_size: string | null
+          id: string
+          message: string | null
+          name: string
+          read: boolean
+          tour_id: string | null
+          tour_title: string | null
+          travel_dates: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          email: string
+          group_size?: string | null
+          id?: string
+          message?: string | null
+          name: string
+          read?: boolean
+          tour_id?: string | null
+          tour_title?: string | null
+          travel_dates?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          email?: string
+          group_size?: string | null
+          id?: string
+          message?: string | null
+          name?: string
+          read?: boolean
+          tour_id?: string | null
+          tour_title?: string | null
+          travel_dates?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tours: {
         Row: {
           best_season: string
