@@ -88,6 +88,8 @@ function HomePage() {
         </div>
       </section>
 
+      <TrustBar />
+
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto]">
           <div>
