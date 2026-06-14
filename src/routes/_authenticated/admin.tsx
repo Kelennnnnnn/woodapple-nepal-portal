@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient, queryOptions } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft, Mail, MailOpen, Inbox } from "lucide-react";
+import { Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft, Mail, MailOpen, Inbox, MessageSquareQuote, Settings as SettingsIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toursListQuery, type Tour, type TourCategory } from "@/lib/tours";
+import { testimonialsQuery, currencyRatesQuery, trustStatsQuery, DEFAULT_RATES, DEFAULT_TRUST, type Testimonial, type CurrencyRates, type TrustStats } from "@/lib/settings";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — Woodapple Tours" }, { name: "robots", content: "noindex" }] }),
@@ -26,7 +27,7 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [editing, setEditing] = useState<TourDraft | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [tab, setTab] = useState<"tours" | "inquiries">("tours");
+  const [tab, setTab] = useState<"tours" | "inquiries" | "testimonials" | "settings">("tours");
 
   useEffect(() => {
     (async () => {
@@ -119,10 +120,12 @@ function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-1 border-b border-border">
+      <div className="mt-6 flex flex-wrap gap-1 border-b border-border">
         {([
           { id: "tours" as const, label: "Tours" },
           { id: "inquiries" as const, label: "Inquiries" },
+          { id: "testimonials" as const, label: "Testimonials" },
+          { id: "settings" as const, label: "Settings" },
         ]).map((t) => (
           <button
             key={t.id}
@@ -137,7 +140,7 @@ function AdminPage() {
         ))}
       </div>
 
-      {tab === "tours" ? (
+      {tab === "tours" && (
         <div className="mt-6 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
           {toursQ.isLoading ? (
             <div className="p-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -184,9 +187,10 @@ function AdminPage() {
             </table>
           )}
         </div>
-      ) : (
-        <InquiriesPanel />
       )}
+      {tab === "inquiries" && <InquiriesPanel />}
+      {tab === "testimonials" && <TestimonialsPanel />}
+      {tab === "settings" && <SettingsPanel />}
 
       {editing && (
         <TourEditor
