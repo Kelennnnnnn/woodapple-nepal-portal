@@ -27,11 +27,6 @@ const trustPoints = [
   { icon: Clock3, title: "12-hour response promise", body: "Every inquiry gets a thoughtful reply within 12 hours, from a real human in Kathmandu." },
 ];
 
-const testimonials = [
-  { name: "Sarah M.", country: "Australia", text: "Our Annapurna trek with Woodapple was the trip of a lifetime. The guides felt like family by day three.", rating: 5 },
-  { name: "Liam K.", country: "Ireland", text: "Seamless from the airport pickup to the final farewell dinner. They thought of every detail.", rating: 5 },
-  { name: "Yuki T.", country: "Japan", text: "Beautifully organized cultural tour. We saw a side of Kathmandu most tourists never reach.", rating: 5 },
-];
 
 const blogPosts = [
   { title: "Best time to trek to Everest Base Camp", date: "Mar 12, 2026", excerpt: "Spring and autumn windows compared — and the quiet shoulder weeks we love." },
