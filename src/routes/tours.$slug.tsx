@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Clock, MapPin, Mountain, ArrowLeft, Check, X, Users, Calendar, ChevronDown } from "lucide-react";
 import { tourBySlugQuery, FALLBACK_IMAGE } from "@/lib/tours";
 import { InquiryForm } from "@/components/inquiry-form";
+import { useCurrency } from "@/lib/currency";
+import { DownloadItineraryButton } from "@/components/download-itinerary-button";
 
 export const Route = createFileRoute("/tours/$slug")({
   loader: async ({ params, context }) => {
@@ -36,6 +38,7 @@ function TourDetail() {
   const { data: tourData } = useSuspenseQuery(tourBySlugQuery(slug));
   const tour = tourData!;
   const [activeImg, setActiveImg] = useState(0);
+  const { format } = useCurrency();
   const images = tour.images.length > 0 ? tour.images : [FALLBACK_IMAGE];
 
   return (
@@ -171,8 +174,11 @@ function TourDetail() {
           {/* Sticky booking sidebar */}
           <aside className="h-fit rounded-2xl bg-card p-6 ring-1 ring-border/60 lg:sticky lg:top-24">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">From</div>
-            <div className="font-display text-4xl font-semibold text-primary">${tour.price_usd}</div>
+            <div className="font-display text-4xl font-semibold text-primary">{format(tour.price_usd)}</div>
             <div className="text-sm text-muted-foreground">per person, twin sharing</div>
+            <div className="mt-4">
+              <DownloadItineraryButton tour={tour} />
+            </div>
             <div className="mt-5 space-y-2 border-t border-border pt-5 text-sm">
               <Row label="Duration" value={`${tour.duration_days} days`} />
               <Row label="Difficulty" value={tour.difficulty} />
