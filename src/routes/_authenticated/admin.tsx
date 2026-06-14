@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient, queryOptions } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft, Mail, MailOpen, Inbox } from "lucide-react";
+import { Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft, Mail, MailOpen, Inbox, MessageSquareQuote, Settings as SettingsIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toursListQuery, type Tour, type TourCategory } from "@/lib/tours";
+import { testimonialsQuery, currencyRatesQuery, trustStatsQuery, DEFAULT_RATES, DEFAULT_TRUST, type Testimonial, type CurrencyRates, type TrustStats } from "@/lib/settings";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — Woodapple Tours" }, { name: "robots", content: "noindex" }] }),
@@ -26,7 +27,7 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [editing, setEditing] = useState<TourDraft | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [tab, setTab] = useState<"tours" | "inquiries">("tours");
+  const [tab, setTab] = useState<"tours" | "inquiries" | "testimonials" | "settings">("tours");
 
   useEffect(() => {
     (async () => {
@@ -119,10 +120,12 @@ function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-1 border-b border-border">
+      <div className="mt-6 flex flex-wrap gap-1 border-b border-border">
         {([
           { id: "tours" as const, label: "Tours" },
           { id: "inquiries" as const, label: "Inquiries" },
+          { id: "testimonials" as const, label: "Testimonials" },
+          { id: "settings" as const, label: "Settings" },
         ]).map((t) => (
           <button
             key={t.id}
@@ -137,7 +140,7 @@ function AdminPage() {
         ))}
       </div>
 
-      {tab === "tours" ? (
+      {tab === "tours" && (
         <div className="mt-6 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
           {toursQ.isLoading ? (
             <div className="p-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -184,9 +187,10 @@ function AdminPage() {
             </table>
           )}
         </div>
-      ) : (
-        <InquiriesPanel />
       )}
+      {tab === "inquiries" && <InquiriesPanel />}
+      {tab === "testimonials" && <TestimonialsPanel />}
+      {tab === "settings" && <SettingsPanel />}
 
       {editing && (
         <TourEditor
@@ -486,3 +490,250 @@ function Detail({ label, value }: { label: string; value: string | null }) {
   );
 }
 
+
+/* ----------------------------- Testimonials ----------------------------- */
+
+type TestimonialDraft = Omit<Testimonial, "id" | "created_at"> & { id?: string };
+
+const emptyTestimonial: TestimonialDraft = {
+  name: "", country: "", tour_title: "", rating: 5, quote: "", photo_url: "", featured: true,
+};
+
+function TestimonialsPanel() {
+  const qc = useQueryClient();
+  const q = useQuery(testimonialsQuery());
+  const [editing, setEditing] = useState<TestimonialDraft | null>(null);
+
+  const save = useMutation({
+    mutationFn: async (d: TestimonialDraft) => {
+      const payload = { ...d, rating: Number(d.rating) };
+      if (d.id) {
+        const { error } = await supabase.from("testimonials").update(payload).eq("id", d.id);
+        if (error) throw error;
+      } else {
+        const { id: _omit, ...insert } = payload; void _omit;
+        const { error } = await supabase.from("testimonials").insert(insert);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["testimonials"] }); setEditing(null); },
+  });
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("testimonials").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["testimonials"] }),
+  });
+
+  const items = q.data ?? [];
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex justify-end">
+        <button onClick={() => setEditing(emptyTestimonial)} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+          <Plus className="h-4 w-4" /> New testimonial
+        </button>
+      </div>
+
+      {q.isLoading ? (
+        <div className="rounded-2xl bg-card p-12 text-center ring-1 ring-border/60"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>
+      ) : items.length === 0 ? (
+        <div className="rounded-2xl bg-card p-16 text-center ring-1 ring-border/60">
+          <MessageSquareQuote className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-3 font-medium">No testimonials yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">Add your first review to show it on the homepage.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((t) => (
+            <div key={t.id} className="flex flex-col rounded-2xl bg-card p-5 ring-1 ring-border/60">
+              <div className="flex items-center gap-3">
+                {t.photo_url ? (
+                  <img src={t.photo_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-muted" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-sm font-semibold">{t.name}</span>
+                    {t.featured && <Star className="h-3.5 w-3.5 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />}
+                  </div>
+                  <div className="truncate text-xs text-muted-foreground">{t.country} · {t.tour_title}</div>
+                </div>
+                <div className="flex">
+                  {Array.from({ length: t.rating }).map((_, i) => (
+                    <Star key={i} className="h-3 w-3 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />
+                  ))}
+                </div>
+              </div>
+              <p className="mt-3 line-clamp-4 flex-1 text-sm text-muted-foreground">&ldquo;{t.quote}&rdquo;</p>
+              <div className="mt-4 flex justify-end gap-1">
+                <button onClick={() => setEditing({ ...t })} className="rounded-md p-2 hover:bg-muted" aria-label="Edit">
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button onClick={() => { if (confirm("Delete this testimonial?")) del.mutate(t.id); }} className="rounded-md p-2 text-destructive hover:bg-destructive/10" aria-label="Delete">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <TestimonialEditor
+          draft={editing}
+          onCancel={() => setEditing(null)}
+          onSave={(d) => save.mutate(d)}
+          saving={save.isPending}
+          error={save.error instanceof Error ? save.error.message : null}
+        />
+      )}
+    </div>
+  );
+}
+
+function TestimonialEditor({ draft, onCancel, onSave, saving, error }: {
+  draft: TestimonialDraft; onCancel: () => void; onSave: (d: TestimonialDraft) => void; saving: boolean; error: string | null;
+}) {
+  const [d, setD] = useState<TestimonialDraft>(draft);
+  const set = <K extends keyof TestimonialDraft>(k: K, v: TestimonialDraft[K]) => setD((p) => ({ ...p, [k]: v }));
+  return (
+    <div className="fixed inset-0 z-50 flex items-end overflow-y-auto bg-black/50 sm:items-center sm:justify-center sm:p-6">
+      <div className="w-full max-w-xl rounded-t-2xl bg-background p-6 shadow-xl sm:rounded-2xl">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl font-semibold">{d.id ? "Edit testimonial" : "New testimonial"}</h2>
+          <button onClick={onCancel} className="text-sm text-muted-foreground hover:text-foreground">Close</button>
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); onSave(d); }} className="mt-5 grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Reviewer name" value={d.name} onChange={(v) => set("name", v)} required />
+            <Field label="Country" value={d.country} onChange={(v) => set("country", v)} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Tour taken" value={d.tour_title} onChange={(v) => set("tour_title", v)} />
+            <NumField label="Rating (1-5)" value={d.rating} onChange={(v) => set("rating", Math.max(1, Math.min(5, v)))} />
+          </div>
+          <Field label="Photo URL (optional)" value={d.photo_url} onChange={(v) => set("photo_url", v)} />
+          <TextareaField label="Quote" value={d.quote} onChange={(v) => set("quote", v)} rows={4} />
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={d.featured} onChange={(e) => set("featured", e.target.checked)} className="h-4 w-4" />
+            Show on homepage
+          </label>
+          {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <button type="button" onClick={onCancel} className="rounded-full border border-border px-5 py-2.5 text-sm hover:bg-muted">Cancel</button>
+            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {d.id ? "Save changes" : "Create"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- Settings ----------------------------- */
+
+function SettingsPanel() {
+  const qc = useQueryClient();
+  const ratesQ = useQuery(currencyRatesQuery());
+  const trustQ = useQuery(trustStatsQuery());
+
+  const [rates, setRates] = useState<CurrencyRates>(DEFAULT_RATES);
+  const [trust, setTrust] = useState<TrustStats>(DEFAULT_TRUST);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+
+  useEffect(() => { if (ratesQ.data) setRates(ratesQ.data); }, [ratesQ.data]);
+  useEffect(() => { if (trustQ.data) setTrust(trustQ.data); }, [trustQ.data]);
+
+  const saveSetting = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ key, value: value as object, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["settings", vars.key] });
+      setSavedMsg("Saved");
+      setTimeout(() => setSavedMsg(null), 2000);
+    },
+  });
+
+  if (ratesQ.isLoading || trustQ.isLoading) {
+    return <div className="mt-6 rounded-2xl bg-card p-12 text-center ring-1 ring-border/60"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  return (
+    <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <section className="rounded-2xl bg-card p-6 ring-1 ring-border/60">
+        <div className="flex items-center gap-2">
+          <SettingsIcon className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-semibold">Currency conversion rates</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">Rates relative to 1 USD. Used for the site-wide currency toggle.</p>
+        <form
+          onSubmit={(e) => { e.preventDefault(); saveSetting.mutate({ key: "currency_rates", value: rates }); }}
+          className="mt-5 grid gap-4"
+        >
+          {(Object.keys(rates) as Array<keyof CurrencyRates>).map((k) => (
+            <label key={k} className="grid grid-cols-[80px_1fr] items-center gap-3 text-sm">
+              <span className="font-semibold">{k}</span>
+              <input
+                type="number" step="0.01" min="0" value={rates[k]} disabled={k === "USD"}
+                onChange={(e) => setRates((r) => ({ ...r, [k]: Number(e.target.value) }))}
+                className="rounded-lg border border-input bg-background px-3 py-2 disabled:opacity-60"
+              />
+            </label>
+          ))}
+          <div className="flex items-center justify-end gap-3">
+            {savedMsg && <span className="text-sm text-primary">{savedMsg}</span>}
+            <button type="submit" disabled={saveSetting.isPending} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+              {saveSetting.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save rates
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="rounded-2xl bg-card p-6 ring-1 ring-border/60">
+        <div className="flex items-center gap-2">
+          <Star className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-semibold">Trust bar stats</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">Numbers shown in the trust bar below the homepage hero.</p>
+        <form
+          onSubmit={(e) => { e.preventDefault(); saveSetting.mutate({ key: "trust_stats", value: trust }); }}
+          className="mt-5 grid gap-4"
+        >
+          {([
+            ["years_operating", "Years in operation"],
+            ["happy_travelers", "Happy travelers"],
+            ["destinations", "Destinations covered"],
+            ["average_rating", "Average rating"],
+          ] as const).map(([k, label]) => (
+            <label key={k} className="grid grid-cols-[160px_1fr] items-center gap-3 text-sm">
+              <span className="font-medium">{label}</span>
+              <input
+                type="number"
+                step={k === "average_rating" ? "0.1" : "1"}
+                value={trust[k]}
+                onChange={(e) => setTrust((t) => ({ ...t, [k]: Number(e.target.value) }))}
+                className="rounded-lg border border-input bg-background px-3 py-2"
+              />
+            </label>
+          ))}
+          <div className="flex justify-end">
+            <button type="submit" disabled={saveSetting.isPending} className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+              {saveSetting.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save stats
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}

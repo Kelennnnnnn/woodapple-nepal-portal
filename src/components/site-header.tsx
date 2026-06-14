@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { CurrencyToggle } from "@/lib/currency";
 
 const navItems = [
   { to: "/", label: "Home" },
@@ -56,6 +57,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <CurrencyToggle className="hidden sm:inline-flex" />
           <Link
             to="/contact"
             className="hidden rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow md:inline-flex"
@@ -87,10 +89,14 @@ export function SiteHeader() {
                 {n.label}
               </Link>
             ))}
+            <div className="mt-2 flex items-center justify-between px-2">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Currency</span>
+              <CurrencyToggle />
+            </div>
             <Link
               to="/contact"
               onClick={() => setOpen(false)}
-              className="mt-2 inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+              className="mt-3 inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
             >
               Plan My Trip
             </Link>

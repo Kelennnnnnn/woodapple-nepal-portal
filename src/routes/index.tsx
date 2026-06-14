@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, Search, Shield, Mountain, Users, Heart, Star, Calendar } from "lucide-react";
+import { ArrowRight, Search, ShieldCheck, MapPinned, BadgeDollarSign, Clock3, Star, Calendar } from "lucide-react";
 import heroImg from "@/assets/hero-mountains.jpg";
 import { TourCard } from "@/components/tour-card";
 import { featuredToursQuery } from "@/lib/tours";
+import { TrustBar } from "@/components/trust-bar";
+import { TestimonialsSection } from "@/components/testimonials-section";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,17 +21,12 @@ export const Route = createFileRoute("/")({
 });
 
 const trustPoints = [
-  { icon: Shield, title: "Licensed & insured", body: "Government-registered tour operator with full liability cover for every traveler." },
-  { icon: Mountain, title: "Local mountain guides", body: "All trips are led by NMA-certified guides who grew up in the Himalaya." },
-  { icon: Users, title: "Small groups", body: "Maximum 10 travelers per departure for a more personal experience." },
-  { icon: Heart, title: "Fair & ethical travel", body: "We pay above-market porter wages and partner only with locally owned lodges." },
+  { icon: ShieldCheck, title: "Licensed & registered agency", body: "Government-registered tour operator in Nepal with full liability insurance for every traveler." },
+  { icon: MapPinned, title: "Local expert guides", body: "All trips led by NMA-certified Nepali guides who grew up in the regions they show you." },
+  { icon: BadgeDollarSign, title: "Best price guarantee", body: "Find the same itinerary cheaper elsewhere and we'll match it — no middlemen, no markups." },
+  { icon: Clock3, title: "12-hour response promise", body: "Every inquiry gets a thoughtful reply within 12 hours, from a real human in Kathmandu." },
 ];
 
-const testimonials = [
-  { name: "Sarah M.", country: "Australia", text: "Our Annapurna trek with Woodapple was the trip of a lifetime. The guides felt like family by day three.", rating: 5 },
-  { name: "Liam K.", country: "Ireland", text: "Seamless from the airport pickup to the final farewell dinner. They thought of every detail.", rating: 5 },
-  { name: "Yuki T.", country: "Japan", text: "Beautifully organized cultural tour. We saw a side of Kathmandu most tourists never reach.", rating: 5 },
-];
 
 const blogPosts = [
   { title: "Best time to trek to Everest Base Camp", date: "Mar 12, 2026", excerpt: "Spring and autumn windows compared — and the quiet shoulder weeks we love." },
@@ -91,6 +88,8 @@ function HomePage() {
         </div>
       </section>
 
+      <TrustBar />
+
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto]">
           <div>
@@ -127,25 +126,8 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Travelers say</div>
-        <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Stories from the trail</h2>
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
-          {testimonials.map((t) => (
-            <figure key={t.name} className="rounded-2xl bg-card p-7 ring-1 ring-border/60">
-              <div className="flex gap-0.5">
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />
-                ))}
-              </div>
-              <blockquote className="mt-4 font-display text-lg leading-snug text-foreground">“{t.text}”</blockquote>
-              <figcaption className="mt-5 text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">{t.name}</span> · {t.country}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
+      <TestimonialsSection />
+
 
       <section className="bg-[color:var(--cream)] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

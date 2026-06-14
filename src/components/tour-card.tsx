@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Clock, MapPin } from "lucide-react";
 import type { Tour } from "@/lib/tours";
 import { FALLBACK_IMAGE } from "@/lib/tours";
+import { useCurrency } from "@/lib/currency";
 
 const categoryLabel: Record<Tour["category"], string> = {
   trekking: "Trekking",
@@ -12,6 +13,7 @@ const categoryLabel: Record<Tour["category"], string> = {
 
 export function TourCard({ tour }: { tour: Tour }) {
   const img = tour.images[0] ?? FALLBACK_IMAGE;
+  const { format } = useCurrency();
   return (
     <Link
       to="/tours/$slug"
@@ -45,7 +47,7 @@ export function TourCard({ tour }: { tour: Tour }) {
           </div>
           <div className="text-right">
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">From</div>
-            <div className="font-display text-lg font-semibold text-primary">${tour.price_usd}</div>
+            <div className="font-display text-lg font-semibold text-primary">{format(tour.price_usd)}</div>
           </div>
         </div>
       </div>
