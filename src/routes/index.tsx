@@ -124,25 +124,8 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Travelers say</div>
-        <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Stories from the trail</h2>
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
-          {testimonials.map((t) => (
-            <figure key={t.name} className="rounded-2xl bg-card p-7 ring-1 ring-border/60">
-              <div className="flex gap-0.5">
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />
-                ))}
-              </div>
-              <blockquote className="mt-4 font-display text-lg leading-snug text-foreground">“{t.text}”</blockquote>
-              <figcaption className="mt-5 text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">{t.name}</span> · {t.country}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
+      <TestimonialsSection />
+
 
       <section className="bg-[color:var(--cream)] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
