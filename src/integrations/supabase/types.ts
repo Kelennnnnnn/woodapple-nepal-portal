@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           country: string | null
@@ -63,6 +81,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      testimonials: {
+        Row: {
+          country: string
+          created_at: string
+          featured: boolean
+          id: string
+          name: string
+          photo_url: string
+          quote: string
+          rating: number
+          tour_title: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string
+          featured?: boolean
+          id?: string
+          name: string
+          photo_url?: string
+          quote?: string
+          rating?: number
+          tour_title?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          featured?: boolean
+          id?: string
+          name?: string
+          photo_url?: string
+          quote?: string
+          rating?: number
+          tour_title?: string
+        }
+        Relationships: []
       }
       tours: {
         Row: {
