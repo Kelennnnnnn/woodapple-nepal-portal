@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRight, Search, Shield, Mountain, Users, Heart, Star, Calendar } from "lucide-react";
+import { ArrowRight, Search, ShieldCheck, MapPinned, BadgeDollarSign, Clock3, Star, Calendar } from "lucide-react";
 import heroImg from "@/assets/hero-mountains.jpg";
 import { TourCard } from "@/components/tour-card";
 import { featuredToursQuery } from "@/lib/tours";
+import { TrustBar } from "@/components/trust-bar";
+import { TestimonialsSection } from "@/components/testimonials-section";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,10 +21,10 @@ export const Route = createFileRoute("/")({
 });
 
 const trustPoints = [
-  { icon: Shield, title: "Licensed & insured", body: "Government-registered tour operator with full liability cover for every traveler." },
-  { icon: Mountain, title: "Local mountain guides", body: "All trips are led by NMA-certified guides who grew up in the Himalaya." },
-  { icon: Users, title: "Small groups", body: "Maximum 10 travelers per departure for a more personal experience." },
-  { icon: Heart, title: "Fair & ethical travel", body: "We pay above-market porter wages and partner only with locally owned lodges." },
+  { icon: ShieldCheck, title: "Licensed & registered agency", body: "Government-registered tour operator in Nepal with full liability insurance for every traveler." },
+  { icon: MapPinned, title: "Local expert guides", body: "All trips led by NMA-certified Nepali guides who grew up in the regions they show you." },
+  { icon: BadgeDollarSign, title: "Best price guarantee", body: "Find the same itinerary cheaper elsewhere and we'll match it — no middlemen, no markups." },
+  { icon: Clock3, title: "12-hour response promise", body: "Every inquiry gets a thoughtful reply within 12 hours, from a real human in Kathmandu." },
 ];
 
 const testimonials = [
