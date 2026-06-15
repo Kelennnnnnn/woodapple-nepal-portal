@@ -28,7 +28,7 @@ function AboutPage() {
     <>
       <section className="relative isolate">
         <div className="absolute inset-0 -z-10">
-          <img src={heroImg} alt="" width={1920} height={1080} className="h-full w-full object-cover" />
+          <img src={heroImg} alt="" loading="lazy" width={1920} height={1080} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 to-black/65" />
         </div>
         <div className="mx-auto max-w-7xl px-4 pb-20 pt-32 text-[color:var(--cream)] sm:px-6 sm:pt-40 lg:px-8">
