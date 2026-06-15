@@ -9,7 +9,9 @@ export const Route = createFileRoute("/about")({
       { name: "description", content: "Meet the licensed Kathmandu team behind Woodapple — Nepali guides building responsible Himalayan journeys since 2012." },
       { property: "og:title", content: "About Woodapple Tours" },
       { property: "og:description", content: "Meet the licensed Kathmandu team behind Woodapple Tours and Travel." },
+      { property: "og:url", content: "/about" },
     ],
+    links: [{ rel: "canonical", href: "/about" }],
   }),
   component: AboutPage,
 });
