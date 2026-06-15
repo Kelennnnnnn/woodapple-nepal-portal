@@ -64,6 +64,7 @@ export const Route = createFileRoute("/tours/$slug")({
       <Link to="/tours" className="mt-4 inline-block text-primary hover:underline">Browse all tours</Link>
     </div>
   ),
+  pendingComponent: () => <PageSpinner label="Loading tour…" />,
   component: TourDetail,
 });
 
