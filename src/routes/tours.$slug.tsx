@@ -110,7 +110,7 @@ function TourDetail() {
                   i === activeImg ? "ring-primary" : "ring-transparent hover:ring-border"
                 }`}
               >
-                <img src={src} alt="" className="h-full w-full object-cover" />
+                <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
