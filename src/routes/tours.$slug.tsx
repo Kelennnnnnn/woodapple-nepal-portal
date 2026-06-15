@@ -271,7 +271,7 @@ function Accordion({ title, children }: { title: React.ReactNode; children: Reac
         <div className="min-w-0 flex-1">{title}</div>
         <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-      {open && <div className="px-5 pb-5 pl-16">{children}</div>}
+      {open && <div className="px-5 pb-5 sm:pl-16">{children}</div>}
     </div>
   );
 }
