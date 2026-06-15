@@ -13,7 +13,7 @@ export const Route = createFileRoute("/tours/$slug")({
     if (!tour) throw notFound();
     return tour;
   },
-  head: ({ loaderData }) => ({
+  head: ({ loaderData, params }) => ({
     meta: loaderData
       ? [
           { title: `${loaderData.title} — Woodapple Tours` },
@@ -21,6 +21,40 @@ export const Route = createFileRoute("/tours/$slug")({
           { property: "og:title", content: loaderData.title },
           { property: "og:description", content: loaderData.short_description },
           { property: "og:image", content: loaderData.images[0] ?? FALLBACK_IMAGE },
+          { property: "og:url", content: `/tours/${params.slug}` },
+          { property: "og:type", content: "product" },
+        ]
+      : [],
+    links: loaderData ? [{ rel: "canonical", href: `/tours/${params.slug}` }] : [],
+    scripts: loaderData
+      ? [
+          {
+            type: "application/ld+json",
+            children: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "TouristTrip",
+              name: loaderData.title,
+              description: loaderData.short_description,
+              image: loaderData.images.length ? loaderData.images : [FALLBACK_IMAGE],
+              touristType: loaderData.category,
+              itinerary: loaderData.itinerary.map((d) => ({
+                "@type": "ItemList",
+                name: `Day ${d.day}: ${d.title}`,
+                description: d.description,
+              })),
+              offers: {
+                "@type": "Offer",
+                price: loaderData.price_usd,
+                priceCurrency: "USD",
+                availability: "https://schema.org/InStock",
+              },
+              provider: {
+                "@type": "TravelAgency",
+                name: "Woodapple Tours and Travel",
+                address: "Kathmandu, Nepal",
+              },
+            }),
+          },
         ]
       : [],
   }),
