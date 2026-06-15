@@ -6,6 +6,7 @@ import { TourCard } from "@/components/tour-card";
 import { featuredToursQuery } from "@/lib/tours";
 import { TrustBar } from "@/components/trust-bar";
 import { TestimonialsSection } from "@/components/testimonials-section";
+import { PageSpinner } from "@/components/page-spinner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
