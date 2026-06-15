@@ -653,7 +653,7 @@ function SettingsPanel() {
     mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
       const { error } = await supabase
         .from("app_settings")
-        .upsert({ key, value: value as object, updated_at: new Date().toISOString() }, { onConflict: "key" });
+        .upsert({ key, value: value as any, updated_at: new Date().toISOString() }, { onConflict: "key" });
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
