@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { z } from "zod";
 import { TourCard } from "@/components/tour-card";
 import { toursListQuery, type TourCategory } from "@/lib/tours";
+import { PageSpinner } from "@/components/page-spinner";
 
 const categories: { value: TourCategory | "all"; label: string }[] = [
   { value: "all", label: "All trips" },
