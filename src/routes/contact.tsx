@@ -9,7 +9,9 @@ export const Route = createFileRoute("/contact")({
       { name: "description", content: "Get in touch with our Kathmandu team to plan your custom Nepal trip. We reply within 24 hours." },
       { property: "og:title", content: "Contact Woodapple Tours" },
       { property: "og:description", content: "Plan your custom Nepal trip with our Kathmandu team." },
+      { property: "og:url", content: "/contact" },
     ],
+    links: [{ rel: "canonical", href: "/contact" }],
   }),
   component: ContactPage,
 });
