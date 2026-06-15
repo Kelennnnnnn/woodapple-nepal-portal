@@ -6,6 +6,7 @@ import { TourCard } from "@/components/tour-card";
 import { featuredToursQuery } from "@/lib/tours";
 import { TrustBar } from "@/components/trust-bar";
 import { TestimonialsSection } from "@/components/testimonials-section";
+import { PageSpinner } from "@/components/page-spinner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -14,9 +15,12 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Hand-crafted Himalayan treks, cultural journeys and jungle safaris led by licensed Nepali guides." },
       { property: "og:title", content: "Experience Nepal with Local Experts" },
       { property: "og:description", content: "Hand-crafted Himalayan treks, cultural journeys and jungle safaris from Kathmandu." },
+      { property: "og:url", content: "/" },
     ],
+    links: [{ rel: "canonical", href: "/" }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(featuredToursQuery()),
+  pendingComponent: () => <PageSpinner />,
   component: HomePage,
 });
 

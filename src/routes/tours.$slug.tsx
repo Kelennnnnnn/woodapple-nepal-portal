@@ -6,6 +6,7 @@ import { tourBySlugQuery, FALLBACK_IMAGE } from "@/lib/tours";
 import { InquiryForm } from "@/components/inquiry-form";
 import { useCurrency } from "@/lib/currency";
 import { DownloadItineraryButton } from "@/components/download-itinerary-button";
+import { PageSpinner } from "@/components/page-spinner";
 
 export const Route = createFileRoute("/tours/$slug")({
   loader: async ({ params, context }) => {
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/tours/$slug")({
     if (!tour) throw notFound();
     return tour;
   },
-  head: ({ loaderData }) => ({
+  head: ({ loaderData, params }) => ({
     meta: loaderData
       ? [
           { title: `${loaderData.title} — Woodapple Tours` },
@@ -21,6 +22,40 @@ export const Route = createFileRoute("/tours/$slug")({
           { property: "og:title", content: loaderData.title },
           { property: "og:description", content: loaderData.short_description },
           { property: "og:image", content: loaderData.images[0] ?? FALLBACK_IMAGE },
+          { property: "og:url", content: `/tours/${params.slug}` },
+          { property: "og:type", content: "product" },
+        ]
+      : [],
+    links: loaderData ? [{ rel: "canonical", href: `/tours/${params.slug}` }] : [],
+    scripts: loaderData
+      ? [
+          {
+            type: "application/ld+json",
+            children: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "TouristTrip",
+              name: loaderData.title,
+              description: loaderData.short_description,
+              image: loaderData.images.length ? loaderData.images : [FALLBACK_IMAGE],
+              touristType: loaderData.category,
+              itinerary: loaderData.itinerary.map((d) => ({
+                "@type": "ItemList",
+                name: `Day ${d.day}: ${d.title}`,
+                description: d.description,
+              })),
+              offers: {
+                "@type": "Offer",
+                price: loaderData.price_usd,
+                priceCurrency: "USD",
+                availability: "https://schema.org/InStock",
+              },
+              provider: {
+                "@type": "TravelAgency",
+                name: "Woodapple Tours and Travel",
+                address: "Kathmandu, Nepal",
+              },
+            }),
+          },
         ]
       : [],
   }),
@@ -30,6 +65,7 @@ export const Route = createFileRoute("/tours/$slug")({
       <Link to="/tours" className="mt-4 inline-block text-primary hover:underline">Browse all tours</Link>
     </div>
   ),
+  pendingComponent: () => <PageSpinner label="Loading tour…" />,
   component: TourDetail,
 });
 
@@ -76,7 +112,7 @@ function TourDetail() {
                   i === activeImg ? "ring-primary" : "ring-transparent hover:ring-border"
                 }`}
               >
-                <img src={src} alt="" className="h-full w-full object-cover" />
+                <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
@@ -171,8 +207,8 @@ function TourDetail() {
             )}
           </div>
 
-          {/* Sticky booking sidebar */}
-          <aside className="h-fit rounded-2xl bg-card p-6 ring-1 ring-border/60 lg:sticky lg:top-24">
+          {/* Sticky booking sidebar — becomes bottom bar on mobile */}
+          <aside id="inquiry" className="h-fit rounded-2xl bg-card p-6 ring-1 ring-border/60 lg:sticky lg:top-24">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">From</div>
             <div className="font-display text-4xl font-semibold text-primary">{format(tour.price_usd)}</div>
             <div className="text-sm text-muted-foreground">per person, twin sharing</div>
@@ -197,6 +233,22 @@ function TourDetail() {
           </aside>
         </div>
       </section>
+
+      {/* Mobile sticky bottom bar */}
+      <div className="sticky bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">From</div>
+            <div className="font-display text-xl font-semibold text-primary">{format(tour.price_usd)}</div>
+          </div>
+          <a
+            href="#inquiry"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Inquire now
+          </a>
+        </div>
+      </div>
     </>
   );
 }
@@ -221,7 +273,7 @@ function Accordion({ title, children }: { title: React.ReactNode; children: Reac
         <div className="min-w-0 flex-1">{title}</div>
         <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-      {open && <div className="px-5 pb-5 pl-16">{children}</div>}
+      {open && <div className="px-5 pb-5 sm:pl-16">{children}</div>}
     </div>
   );
 }

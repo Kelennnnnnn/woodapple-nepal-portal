@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { z } from "zod";
 import { TourCard } from "@/components/tour-card";
 import { toursListQuery, type TourCategory } from "@/lib/tours";
+import { PageSpinner } from "@/components/page-spinner";
 
 const categories: { value: TourCategory | "all"; label: string }[] = [
   { value: "all", label: "All trips" },
@@ -27,9 +28,12 @@ export const Route = createFileRoute("/tours/")({
       { name: "description", content: "Browse our Himalayan treks, cultural tours, jungle safaris and spiritual journeys across Nepal." },
       { property: "og:title", content: "All Tours — Woodapple" },
       { property: "og:description", content: "Browse our Himalayan treks, cultural tours, jungle safaris and spiritual journeys across Nepal." },
+      { property: "og:url", content: "/tours" },
     ],
+    links: [{ rel: "canonical", href: "/tours" }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(toursListQuery()),
+  pendingComponent: () => <PageSpinner label="Loading tours…" />,
   component: ToursPage,
 });
 
