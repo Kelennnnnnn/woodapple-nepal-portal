@@ -19,6 +19,7 @@ export const Route = createFileRoute("/")({
     links: [{ rel: "canonical", href: "/" }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(featuredToursQuery()),
+  pendingComponent: () => <PageSpinner />,
   component: HomePage,
 });
 
