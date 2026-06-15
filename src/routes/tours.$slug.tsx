@@ -6,6 +6,7 @@ import { tourBySlugQuery, FALLBACK_IMAGE } from "@/lib/tours";
 import { InquiryForm } from "@/components/inquiry-form";
 import { useCurrency } from "@/lib/currency";
 import { DownloadItineraryButton } from "@/components/download-itinerary-button";
+import { PageSpinner } from "@/components/page-spinner";
 
 export const Route = createFileRoute("/tours/$slug")({
   loader: async ({ params, context }) => {
