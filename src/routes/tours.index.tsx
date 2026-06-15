@@ -32,6 +32,7 @@ export const Route = createFileRoute("/tours/")({
     links: [{ rel: "canonical", href: "/tours" }],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(toursListQuery()),
+  pendingComponent: () => <PageSpinner label="Loading tours…" />,
   component: ToursPage,
 });
 
