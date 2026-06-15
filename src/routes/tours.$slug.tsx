@@ -205,8 +205,8 @@ function TourDetail() {
             )}
           </div>
 
-          {/* Sticky booking sidebar */}
-          <aside className="h-fit rounded-2xl bg-card p-6 ring-1 ring-border/60 lg:sticky lg:top-24">
+          {/* Sticky booking sidebar — becomes bottom bar on mobile */}
+          <aside id="inquiry" className="h-fit rounded-2xl bg-card p-6 ring-1 ring-border/60 lg:sticky lg:top-24">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">From</div>
             <div className="font-display text-4xl font-semibold text-primary">{format(tour.price_usd)}</div>
             <div className="text-sm text-muted-foreground">per person, twin sharing</div>
@@ -231,6 +231,22 @@ function TourDetail() {
           </aside>
         </div>
       </section>
+
+      {/* Mobile sticky bottom bar */}
+      <div className="sticky bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">From</div>
+            <div className="font-display text-xl font-semibold text-primary">{format(tour.price_usd)}</div>
+          </div>
+          <a
+            href="#inquiry"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Inquire now
+          </a>
+        </div>
+      </div>
     </>
   );
 }
