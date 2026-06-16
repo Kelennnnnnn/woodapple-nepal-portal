@@ -1,16 +1,24 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient, queryOptions } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft, Mail, MailOpen, Inbox, MessageSquareQuote, Settings as SettingsIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Pencil, Plus, Trash2, LogOut, Loader2, ShieldAlert, Star, ArrowLeft,
+  Mail, MailOpen, Inbox, MessageSquareQuote, Settings as SettingsIcon,
+  LayoutDashboard, Map as MapIcon, Search, GripVertical, X, TrendingUp,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toursListQuery, type Tour, type TourCategory } from "@/lib/tours";
-import { testimonialsQuery, currencyRatesQuery, trustStatsQuery, DEFAULT_RATES, DEFAULT_TRUST, type Testimonial, type CurrencyRates, type TrustStats } from "@/lib/settings";
+import { toursListQuery, type Tour, type TourCategory, type ItineraryDay, type FaqItem } from "@/lib/tours";
+import {
+  testimonialsQuery, currencyRatesQuery, trustStatsQuery,
+  DEFAULT_RATES, DEFAULT_TRUST, type Testimonial, type CurrencyRates, type TrustStats,
+} from "@/lib/settings";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — Woodapple Tours" }, { name: "robots", content: "noindex" }] }),
   component: AdminPage,
 });
 
+type TabId = "overview" | "tours" | "inquiries" | "testimonials" | "settings";
 type TourDraft = Omit<Tour, "id" | "created_at"> & { id?: string };
 
 const emptyDraft: TourDraft = {
@@ -27,7 +35,8 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [editing, setEditing] = useState<TourDraft | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [tab, setTab] = useState<"tours" | "inquiries" | "testimonials" | "settings">("tours");
+  const [tab, setTab] = useState<TabId>("overview");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -74,6 +83,19 @@ function AdminPage() {
     navigate({ to: "/auth", replace: true });
   };
 
+  // Reset search when tab changes
+  useEffect(() => { setSearch(""); }, [tab]);
+
+  const filteredTours = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return toursQ.data ?? [];
+    return (toursQ.data ?? []).filter((t) =>
+      t.title.toLowerCase().includes(s) ||
+      t.slug.toLowerCase().includes(s) ||
+      t.category.toLowerCase().includes(s)
+    );
+  }, [toursQ.data, search]);
+
   if (isAdmin === null) {
     return <div className="grid min-h-[60vh] place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
@@ -89,14 +111,19 @@ function AdminPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Your account ({userEmail}) is signed in, but doesn't have the admin role yet.
           </p>
-          <p className="mt-4 rounded-lg bg-muted p-3 text-left text-xs text-muted-foreground">
-            Ask a backend administrator to grant the admin role to your user ID by inserting a row into <code className="font-mono">user_roles</code>.
-          </p>
           <button onClick={signOut} className="mt-5 text-sm font-semibold text-primary hover:underline">Sign out</button>
         </div>
       </div>
     );
   }
+
+  const tabs: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "tours", label: "Tours", icon: MapIcon },
+    { id: "inquiries", label: "Inquiries", icon: Inbox },
+    { id: "testimonials", label: "Testimonials", icon: MessageSquareQuote },
+    { id: "settings", label: "Settings", icon: SettingsIcon },
+  ];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -121,73 +148,101 @@ function AdminPage() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-1 border-b border-border">
-        {([
-          { id: "tours" as const, label: "Tours" },
-          { id: "inquiries" as const, label: "Inquiries" },
-          { id: "testimonials" as const, label: "Testimonials" },
-          { id: "settings" as const, label: "Settings" },
-        ]).map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`relative px-4 py-2.5 text-sm font-medium transition ${
-              tab === t.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t.label}
-            {tab === t.id && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />}
-          </button>
-        ))}
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`relative inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition ${
+                tab === t.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+              {tab === t.id && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />}
+            </button>
+          );
+        })}
       </div>
 
+      {tab === "overview" && <OverviewPanel onJump={setTab} />}
+
       {tab === "tours" && (
-        <div className="mt-6 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
-          {toursQ.isLoading ? (
-            <div className="p-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3">Tour</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Days</th>
-                  <th className="px-4 py-3">Price</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {(toursQ.data ?? []).map((t) => (
-                  <tr key={t.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 font-medium">
-                        {t.featured && <Star className="h-3.5 w-3.5 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />}
-                        {t.title}
-                      </div>
-                      <div className="text-xs text-muted-foreground">/{t.slug}</div>
-                    </td>
-                    <td className="px-4 py-3 capitalize">{t.category}</td>
-                    <td className="px-4 py-3">{t.duration_days}</td>
-                    <td className="px-4 py-3">${t.price_usd}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <button onClick={() => setEditing({ ...t })} className="rounded-md p-2 hover:bg-muted" aria-label="Edit">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => { if (confirm(`Delete "${t.title}"? This cannot be undone.`)) deleteMut.mutate(t.id); }}
-                          className="rounded-md p-2 text-destructive hover:bg-destructive/10" aria-label="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+        <>
+          <div className="mt-6 flex items-center gap-2">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tours…"
+                className="w-full rounded-full border border-input bg-background py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <span className="text-xs text-muted-foreground">{filteredTours.length} of {toursQ.data?.length ?? 0}</span>
+          </div>
+
+          <div className="mt-3 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
+            {toursQ.isLoading ? (
+              <div className="p-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : filteredTours.length === 0 ? (
+              <div className="p-16 text-center text-sm text-muted-foreground">No tours match.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">Tour</th>
+                    <th className="px-4 py-3">Category</th>
+                    <th className="px-4 py-3">Days</th>
+                    <th className="px-4 py-3">Price</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredTours.map((t) => (
+                    <tr key={t.id} className="hover:bg-muted/30">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 font-medium">
+                          {t.featured && <Star className="h-3.5 w-3.5 fill-[color:var(--saffron)] text-[color:var(--saffron)]" />}
+                          {t.title}
+                        </div>
+                        <div className="text-xs text-muted-foreground">/{t.slug}</div>
+                      </td>
+                      <td className="px-4 py-3 capitalize">{t.category}</td>
+                      <td className="px-4 py-3">{t.duration_days}</td>
+                      <td className="px-4 py-3">${t.price_usd}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Link
+                            to="/tours/$slug"
+                            params={{ slug: t.slug }}
+                            className="rounded-md p-2 hover:bg-muted"
+                            aria-label="View on site"
+                            target="_blank"
+                          >
+                            <TrendingUp className="h-4 w-4" />
+                          </Link>
+                          <button onClick={() => setEditing({ ...t })} className="rounded-md p-2 hover:bg-muted" aria-label="Edit">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => { if (confirm(`Delete "${t.title}"? This cannot be undone.`)) deleteMut.mutate(t.id); }}
+                            className="rounded-md p-2 text-destructive hover:bg-destructive/10" aria-label="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
       )}
+
       {tab === "inquiries" && <InquiriesPanel />}
       {tab === "testimonials" && <TestimonialsPanel />}
       {tab === "settings" && <SettingsPanel />}
@@ -205,32 +260,136 @@ function AdminPage() {
   );
 }
 
+/* ----------------------------- Overview ----------------------------- */
+
+function OverviewPanel({ onJump }: { onJump: (t: TabId) => void }) {
+  const toursQ = useQuery(toursListQuery());
+  const inquiriesQ = useQuery(inquiriesQuery);
+  const testimonialsQ = useQuery(testimonialsQuery());
+
+  const tours = toursQ.data ?? [];
+  const inquiries = inquiriesQ.data ?? [];
+  const testimonials = testimonialsQ.data ?? [];
+  const unread = inquiries.filter((i) => !i.read).length;
+  const featured = tours.filter((t) => t.featured).length;
+  const avgRating = testimonials.length
+    ? (testimonials.reduce((s, t) => s + t.rating, 0) / testimonials.length).toFixed(1)
+    : "—";
+  const recent = inquiries.slice(0, 5);
+
+  const cards = [
+    { label: "Tours", value: tours.length, sub: `${featured} featured`, tab: "tours" as TabId, icon: MapIcon },
+    { label: "Inquiries", value: inquiries.length, sub: `${unread} unread`, tab: "inquiries" as TabId, icon: Inbox },
+    { label: "Testimonials", value: testimonials.length, sub: `${avgRating} avg rating`, tab: "testimonials" as TabId, icon: MessageSquareQuote },
+    { label: "Currencies", value: 3, sub: "USD · AUD · EUR", tab: "settings" as TabId, icon: SettingsIcon },
+  ];
+
+  return (
+    <div className="mt-6 space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <button
+              key={c.label}
+              onClick={() => onJump(c.tab)}
+              className="group rounded-2xl bg-card p-5 text-left ring-1 ring-border/60 transition hover:ring-primary/40"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">{c.label}</span>
+                <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+              </div>
+              <div className="mt-2 font-display text-3xl font-semibold">{c.value}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{c.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="rounded-2xl bg-card ring-1 ring-border/60">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="font-display text-lg font-semibold">Recent inquiries</h2>
+          <button onClick={() => onJump("inquiries")} className="text-xs font-semibold text-primary hover:underline">
+            View all →
+          </button>
+        </div>
+        {inquiriesQ.isLoading ? (
+          <div className="p-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : recent.length === 0 ? (
+          <div className="p-10 text-center text-sm text-muted-foreground">No inquiries yet.</div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {recent.map((i) => (
+              <li key={i.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3">
+                <span className={`grid h-8 w-8 place-items-center rounded-full ${i.read ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+                  {i.read ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{i.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{i.tour_title ?? "General"} · {i.email}</span>
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {new Date(i.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- Tour editor ----------------------------- */
+
 function TourEditor({ draft, onCancel, onSave, saving, error }: {
   draft: TourDraft; onCancel: () => void; onSave: (d: TourDraft) => void; saving: boolean; error: string | null;
 }) {
   const [d, setD] = useState<TourDraft>(draft);
   const set = <K extends keyof TourDraft>(k: K, v: TourDraft[K]) => setD((prev) => ({ ...prev, [k]: v }));
 
-  const setJson = (k: "itinerary" | "faq", str: string) => {
-    try { set(k, JSON.parse(str)); } catch { /* keep typing */ }
-  };
   const setArr = (k: "included" | "excluded" | "images", str: string) =>
     set(k, str.split("\n").map((s) => s.trim()).filter(Boolean));
+
+  // Itinerary helpers
+  const addDay = () => set("itinerary", [
+    ...d.itinerary,
+    { day: d.itinerary.length + 1, title: "", description: "" },
+  ]);
+  const updateDay = (idx: number, patch: Partial<ItineraryDay>) =>
+    set("itinerary", d.itinerary.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  const removeDay = (idx: number) =>
+    set("itinerary", d.itinerary.filter((_, i) => i !== idx).map((it, i) => ({ ...it, day: i + 1 })));
+
+  // FAQ helpers
+  const addFaq = () => set("faq", [...d.faq, { q: "", a: "" }]);
+  const updateFaq = (idx: number, patch: Partial<FaqItem>) =>
+    set("faq", d.faq.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  const removeFaq = (idx: number) => set("faq", d.faq.filter((_, i) => i !== idx));
+
+  // Auto-slug
+  const autoSlug = (title: string) => {
+    if (d.slug) return;
+    const s = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    set("slug", s);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end overflow-y-auto bg-black/50 sm:items-center sm:justify-center sm:p-6">
       <div className="w-full max-w-3xl rounded-t-2xl bg-background p-6 shadow-xl sm:rounded-2xl">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold">{d.id ? "Edit tour" : "New tour"}</h2>
-          <button onClick={onCancel} className="text-sm text-muted-foreground hover:text-foreground">Close</button>
+          <button onClick={onCancel} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         <form
           onSubmit={(e) => { e.preventDefault(); onSave(d); }}
-          className="mt-5 grid max-h-[70vh] gap-4 overflow-y-auto pr-1"
+          className="mt-5 grid max-h-[75vh] gap-4 overflow-y-auto pr-1"
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Title" value={d.title} onChange={(v) => set("title", v)} required />
+            <Field label="Title" value={d.title} onChange={(v) => { set("title", v); autoSlug(v); }} required />
             <Field label="Slug" value={d.slug} onChange={(v) => set("slug", v)} required />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -249,36 +408,88 @@ function TourEditor({ draft, onCancel, onSave, saving, error }: {
           </div>
           <TextareaField label="Short description" value={d.short_description} onChange={(v) => set("short_description", v)} rows={2} />
           <TextareaField label="Full description" value={d.full_description} onChange={(v) => set("full_description", v)} rows={4} />
-          <TextareaField
-            label="Included (one per line)"
-            value={d.included.join("\n")}
-            onChange={(v) => setArr("included", v)}
-            rows={4}
-          />
-          <TextareaField
-            label="Excluded (one per line)"
-            value={d.excluded.join("\n")}
-            onChange={(v) => setArr("excluded", v)}
-            rows={3}
-          />
-          <TextareaField
-            label="Images (one URL per line)"
-            value={d.images.join("\n")}
-            onChange={(v) => setArr("images", v)}
-            rows={3}
-          />
-          <TextareaField
-            label="Itinerary (JSON array of {day, title, description})"
-            value={JSON.stringify(d.itinerary, null, 2)}
-            onChange={(v) => setJson("itinerary", v)}
-            rows={6} mono
-          />
-          <TextareaField
-            label="FAQ (JSON array of {q, a})"
-            value={JSON.stringify(d.faq, null, 2)}
-            onChange={(v) => setJson("faq", v)}
-            rows={5} mono
-          />
+          <TextareaField label="Included (one per line)" value={d.included.join("\n")} onChange={(v) => setArr("included", v)} rows={4} />
+          <TextareaField label="Excluded (one per line)" value={d.excluded.join("\n")} onChange={(v) => setArr("excluded", v)} rows={3} />
+          <TextareaField label="Images (one URL per line)" value={d.images.join("\n")} onChange={(v) => setArr("images", v)} rows={3} />
+
+          {/* Itinerary builder */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Itinerary</span>
+              <button type="button" onClick={addDay} className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs hover:bg-muted">
+                <Plus className="h-3 w-3" /> Add day
+              </button>
+            </div>
+            <div className="mt-2 space-y-2">
+              {d.itinerary.length === 0 && (
+                <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">No days yet.</p>
+              )}
+              {d.itinerary.map((it, idx) => (
+                <div key={idx} className="rounded-lg border border-border bg-muted/20 p-3">
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Day {it.day}</span>
+                    <input
+                      value={it.title}
+                      onChange={(e) => updateDay(idx, { title: e.target.value })}
+                      placeholder="Day title"
+                      className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none"
+                    />
+                    <button type="button" onClick={() => removeDay(idx)} className="rounded-md p-1 text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <textarea
+                    value={it.description}
+                    onChange={(e) => updateDay(idx, { description: e.target.value })}
+                    placeholder="Description"
+                    rows={2}
+                    className="mt-2 w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* FAQ builder */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">FAQs</span>
+              <button type="button" onClick={addFaq} className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs hover:bg-muted">
+                <Plus className="h-3 w-3" /> Add FAQ
+              </button>
+            </div>
+            <div className="mt-2 space-y-2">
+              {d.faq.length === 0 && (
+                <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">No FAQs yet.</p>
+              )}
+              {d.faq.map((it, idx) => (
+                <div key={idx} className="rounded-lg border border-border bg-muted/20 p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 space-y-2">
+                      <input
+                        value={it.q}
+                        onChange={(e) => updateFaq(idx, { q: e.target.value })}
+                        placeholder="Question"
+                        className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-medium focus:border-primary focus:outline-none"
+                      />
+                      <textarea
+                        value={it.a}
+                        onChange={(e) => updateFaq(idx, { a: e.target.value })}
+                        placeholder="Answer"
+                        rows={2}
+                        className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                    <button type="button" onClick={() => removeFaq(idx)} className="rounded-md p-1 text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={d.featured} onChange={(e) => set("featured", e.target.checked)} className="h-4 w-4" />
             Featured on homepage
@@ -341,6 +552,8 @@ function TextareaField({ label, value, onChange, rows = 3, mono }: { label: stri
   );
 }
 
+/* ----------------------------- Inquiries ----------------------------- */
+
 type Inquiry = {
   id: string;
   tour_id: string | null;
@@ -371,6 +584,8 @@ function InquiriesPanel() {
   const qc = useQueryClient();
   const q = useQuery(inquiriesQuery);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
 
   const toggleRead = useMutation({
     mutationFn: async ({ id, read }: { id: string; read: boolean }) => {
@@ -388,11 +603,50 @@ function InquiriesPanel() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["inquiries"] }),
   });
 
+  const markAllRead = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("inquiries").update({ read: true }).eq("read", false);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["inquiries"] }),
+  });
+
+  const items = q.data ?? [];
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    return items.filter((i) => {
+      if (filter === "unread" && i.read) return false;
+      if (filter === "read" && !i.read) return false;
+      if (!s) return true;
+      return (
+        i.name.toLowerCase().includes(s) ||
+        i.email.toLowerCase().includes(s) ||
+        (i.tour_title ?? "").toLowerCase().includes(s) ||
+        (i.message ?? "").toLowerCase().includes(s)
+      );
+    });
+  }, [items, search, filter]);
+
+  const exportCsv = () => {
+    const header = ["Name", "Email", "Country", "Tour", "Travel dates", "Group size", "Message", "Read", "Received"];
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows = filtered.map((i) => [
+      i.name, i.email, i.country ?? "", i.tour_title ?? "",
+      i.travel_dates ?? "", i.group_size ?? "", (i.message ?? "").replace(/\n/g, " "),
+      i.read ? "yes" : "no", new Date(i.created_at).toISOString(),
+    ].map(escape).join(","));
+    const csv = [header.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `inquiries-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
   if (q.isLoading) {
     return <div className="mt-6 rounded-2xl bg-card p-12 text-center ring-1 ring-border/60"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
-  const items = q.data ?? [];
   if (items.length === 0) {
     return (
       <div className="mt-6 rounded-2xl bg-card p-16 text-center ring-1 ring-border/60">
@@ -407,75 +661,109 @@ function InquiriesPanel() {
 
   return (
     <div className="mt-6 space-y-3">
-      <div className="text-sm text-muted-foreground">
-        {items.length} total · <span className="font-semibold text-primary">{unreadCount} unread</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search inquiries…"
+            className="w-full rounded-full border border-input bg-background py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+        <div className="flex rounded-full border border-border p-0.5 text-xs">
+          {(["all", "unread", "read"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`rounded-full px-3 py-1 capitalize ${filter === f ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {f}{f === "unread" && unreadCount > 0 ? ` (${unreadCount})` : ""}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex gap-2">
+          {unreadCount > 0 && (
+            <button onClick={() => markAllRead.mutate()} className="rounded-full border border-border px-3 py-1.5 text-xs hover:bg-muted">
+              Mark all read
+            </button>
+          )}
+          <button onClick={exportCsv} className="rounded-full border border-border px-3 py-1.5 text-xs hover:bg-muted">
+            Export CSV
+          </button>
+        </div>
       </div>
+
       <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
-        <ul className="divide-y divide-border">
-          {items.map((i) => {
-            const isOpen = openId === i.id;
-            return (
-              <li key={i.id} className={!i.read ? "bg-primary/[0.03]" : ""}>
-                <button
-                  onClick={() => {
-                    setOpenId(isOpen ? null : i.id);
-                    if (!i.read) toggleRead.mutate({ id: i.id, read: true });
-                  }}
-                  className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left hover:bg-muted/30"
-                >
-                  <span className={`grid h-8 w-8 place-items-center rounded-full ${i.read ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
-                    {i.read ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-2">
-                      <span className={`truncate text-sm ${i.read ? "font-medium" : "font-semibold"}`}>{i.name}</span>
-                      {!i.read && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase text-primary-foreground">New</span>}
+        {filtered.length === 0 ? (
+          <div className="p-12 text-center text-sm text-muted-foreground">No inquiries match.</div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {filtered.map((i) => {
+              const isOpen = openId === i.id;
+              return (
+                <li key={i.id} className={!i.read ? "bg-primary/[0.03]" : ""}>
+                  <button
+                    onClick={() => {
+                      setOpenId(isOpen ? null : i.id);
+                      if (!i.read) toggleRead.mutate({ id: i.id, read: true });
+                    }}
+                    className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left hover:bg-muted/30"
+                  >
+                    <span className={`grid h-8 w-8 place-items-center rounded-full ${i.read ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+                      {i.read ? <MailOpen className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
                     </span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {i.tour_title ?? "General inquiry"} · {i.email}
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2">
+                        <span className={`truncate text-sm ${i.read ? "font-medium" : "font-semibold"}`}>{i.name}</span>
+                        {!i.read && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase text-primary-foreground">New</span>}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {i.tour_title ?? "General inquiry"} · {i.email}
+                      </span>
                     </span>
-                  </span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {new Date(i.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                  </span>
-                </button>
-                {isOpen && (
-                  <div className="space-y-3 border-t border-border bg-muted/20 px-4 py-4 text-sm">
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-                      <Detail label="Country" value={i.country} />
-                      <Detail label="Group size" value={i.group_size} />
-                      <Detail label="Travel dates" value={i.travel_dates} />
-                      <Detail label="Received" value={new Date(i.created_at).toLocaleString()} />
-                    </dl>
-                    {i.message && (
-                      <div>
-                        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Message</div>
-                        <p className="mt-1 whitespace-pre-wrap text-sm">{i.message}</p>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {new Date(i.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="space-y-3 border-t border-border bg-muted/20 px-4 py-4 text-sm">
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+                        <Detail label="Country" value={i.country} />
+                        <Detail label="Group size" value={i.group_size} />
+                        <Detail label="Travel dates" value={i.travel_dates} />
+                        <Detail label="Received" value={new Date(i.created_at).toLocaleString()} />
+                      </dl>
+                      {i.message && (
+                        <div>
+                          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Message</div>
+                          <p className="mt-1 whitespace-pre-wrap text-sm">{i.message}</p>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <a href={`mailto:${i.email}`} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
+                          Reply by email
+                        </a>
+                        <button
+                          onClick={() => toggleRead.mutate({ id: i.id, read: !i.read })}
+                          className="rounded-full border border-border px-4 py-2 text-xs hover:bg-muted"
+                        >
+                          Mark as {i.read ? "unread" : "read"}
+                        </button>
+                        <button
+                          onClick={() => { if (confirm("Delete this inquiry?")) del.mutate(i.id); }}
+                          className="rounded-full border border-border px-4 py-2 text-xs text-destructive hover:bg-destructive/10"
+                        >
+                          Delete
+                        </button>
                       </div>
-                    )}
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <a href={`mailto:${i.email}`} className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
-                        Reply by email
-                      </a>
-                      <button
-                        onClick={() => toggleRead.mutate({ id: i.id, read: !i.read })}
-                        className="rounded-full border border-border px-4 py-2 text-xs hover:bg-muted"
-                      >
-                        Mark as {i.read ? "unread" : "read"}
-                      </button>
-                      <button
-                        onClick={() => { if (confirm("Delete this inquiry?")) del.mutate(i.id); }}
-                        className="rounded-full border border-border px-4 py-2 text-xs text-destructive hover:bg-destructive/10"
-                      >
-                        Delete
-                      </button>
                     </div>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );
@@ -489,7 +777,6 @@ function Detail({ label, value }: { label: string; value: string | null }) {
     </div>
   );
 }
-
 
 /* ----------------------------- Testimonials ----------------------------- */
 
