@@ -1,27 +1,51 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Lock } from "lucide-react";
+
+const searchSchema = z.object({
+  denied: z.coerce.number().optional(),
+});
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [{ title: "Admin sign in — Woodapple Tours" }, { name: "robots", content: "noindex" }],
   }),
+  validateSearch: searchSchema,
   component: AuthPage,
 });
 
+async function isAdmin(userId: string) {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  return !!data;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
+  const { denied } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    denied ? "This account does not have admin access." : null,
+  );
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/admin", replace: true });
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      if (await isAdmin(data.session.user.id)) {
+        navigate({ to: "/admin", replace: true });
+      } else {
+        await supabase.auth.signOut();
+      }
     });
   }, [navigate]);
 
@@ -32,8 +56,12 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (!data.user || !(await isAdmin(data.user.id))) {
+          await supabase.auth.signOut();
+          throw new Error("This account does not have admin access.");
+        }
         navigate({ to: "/admin", replace: true });
       } else {
         const { error } = await supabase.auth.signUp({
@@ -42,7 +70,9 @@ function AuthPage() {
           options: { emailRedirectTo: `${window.location.origin}/admin` },
         });
         if (error) throw error;
-        setInfo("Account created. If your project requires email confirmation, check your inbox before signing in.");
+        setInfo(
+          "Account created. If your project requires email confirmation, check your inbox. New accounts only get access if granted the admin role.",
+        );
         setMode("signin");
       }
     } catch (err: unknown) {

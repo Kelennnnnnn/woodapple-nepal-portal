@@ -57,6 +57,12 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link
+            to="/auth"
+            className="hidden text-xs font-medium text-muted-foreground hover:text-primary md:inline-flex"
+          >
+            Admin
+          </Link>
           <CurrencyToggle className="hidden sm:inline-flex" />
           <Link
             to="/contact"
@@ -64,6 +70,7 @@ export function SiteHeader() {
           >
             Plan My Trip
           </Link>
+
           <button
             type="button"
             aria-label="Toggle menu"
@@ -100,9 +107,17 @@ export function SiteHeader() {
             >
               Plan My Trip
             </Link>
+            <Link
+              to="/auth"
+              onClick={() => setOpen(false)}
+              className="mt-2 text-center text-xs text-muted-foreground hover:text-primary"
+            >
+              Admin login
+            </Link>
           </div>
         </div>
       )}
     </header>
   );
 }
+

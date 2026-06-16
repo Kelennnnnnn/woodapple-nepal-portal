@@ -84,9 +84,13 @@ export function SiteFooter() {
       <div className="border-t border-white/15">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-2 px-4 py-5 text-xs opacity-70 sm:flex-row sm:items-center sm:px-6 lg:px-8">
           <p>© {new Date().getFullYear()} Woodapple Tours and Travel Pvt. Ltd. All rights reserved.</p>
-          <p>Made in Kathmandu, Nepal 🇳🇵</p>
+          <div className="flex items-center gap-4">
+            <Link to="/auth" className="hover:text-white hover:underline">Admin login</Link>
+            <p>Made in Kathmandu, Nepal 🇳🇵</p>
+          </div>
         </div>
       </div>
+
     </footer>
   );
 }
