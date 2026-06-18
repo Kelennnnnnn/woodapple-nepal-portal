@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { sendInquiryEmail } from "@/lib/api/inquiry-email.functions";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -18,6 +20,52 @@ export const Route = createFileRoute("/contact")({
 
 function ContactPage() {
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const name = String(fd.get("name") || "").trim();
+    const email = String(fd.get("email") || "").trim();
+    const country = String(fd.get("country") || "").trim();
+    const travel_dates = String(fd.get("when") || "").trim();
+    const interest = String(fd.get("interest") || "").trim();
+    const details = String(fd.get("details") || "").trim();
+    if (!name || !email) {
+      setError("Please provide your name and email.");
+      return;
+    }
+    const message = [interest && `Interest: ${interest}`, details].filter(Boolean).join("\n\n");
+    setSubmitting(true);
+    try {
+      const { error: insertError } = await supabase.from("inquiries").insert({
+        tour_id: null,
+        tour_title: interest || null,
+        name,
+        email,
+        country: country || null,
+        travel_dates: travel_dates || null,
+        group_size: null,
+        message: message || null,
+      });
+      if (insertError) throw insertError;
+      try {
+        await sendInquiryEmail({
+          data: { name, email, country, travel_dates, group_size: "", message, tour_title: interest },
+        });
+      } catch (err) {
+        console.error("sendInquiryEmail failed", err);
+      }
+      setSent(true);
+    } catch (err) {
+      setError((err as Error).message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <>
       <section className="border-b border-border bg-[color:var(--cream)]">
@@ -35,7 +83,7 @@ function ContactPage() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_360px]">
           <form
-            onSubmit={(e) => { e.preventDefault(); setSent(true); }}
+            onSubmit={handleSubmit}
             className="rounded-2xl bg-card p-6 ring-1 ring-border/60 sm:p-8"
           >
             {sent ? (
@@ -57,7 +105,7 @@ function ContactPage() {
                 </div>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium">Which experience interests you?</span>
-                  <select className="rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus:border-primary focus:outline-none">
+                  <select name="interest" defaultValue="Himalayan trek" className="rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus:border-primary focus:outline-none">
                     <option>Himalayan trek</option>
                     <option>Cultural / heritage tour</option>
                     <option>Jungle safari</option>
@@ -68,15 +116,19 @@ function ContactPage() {
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium">Tell us a little more</span>
                   <textarea
+                    name="details"
                     rows={5}
                     placeholder="Group size, fitness level, anything you've always wanted to see…"
                     className="rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus:border-primary focus:outline-none"
                   />
                 </label>
+                {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
                 <button
                   type="submit"
-                  className="mt-2 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                  disabled={submitting}
+                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   Send inquiry
                 </button>
               </div>
