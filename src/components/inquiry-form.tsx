@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2, Check } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { sendInquiryEmail } from "@/lib/api/inquiry-email.functions";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Please enter your name").max(100, "Name is too long"),
@@ -41,6 +42,21 @@ export function InquiryForm({ tourId, tourTitle }: { tourId?: string; tourTitle?
         message: values.message || null,
       });
       if (error) throw error;
+      try {
+        await sendInquiryEmail({
+          data: {
+            name: values.name,
+            email: values.email,
+            country: values.country || "",
+            travel_dates: values.travel_dates || "",
+            group_size: values.group_size || "",
+            message: values.message || "",
+            tour_title: tourTitle || "",
+          },
+        });
+      } catch (err) {
+        console.error("sendInquiryEmail failed", err);
+      }
     },
     onError: (e: Error) => setSubmitError(e.message || "Something went wrong. Please try again."),
   });
