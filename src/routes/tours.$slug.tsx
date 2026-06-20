@@ -101,7 +101,7 @@ function TourDetail() {
         {/* Gallery */}
         <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
           <div className="aspect-[16/10] overflow-hidden rounded-2xl bg-muted">
-            <img src={images[activeImg]} alt={tour.title} className="h-full w-full object-cover" />
+            <img src={images[activeImg]} alt={tour.title} decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
           </div>
           <div className="flex gap-3 overflow-x-auto sm:flex-col">
             {images.map((src, i) => (
@@ -112,7 +112,7 @@ function TourDetail() {
                   i === activeImg ? "ring-primary" : "ring-transparent hover:ring-border"
                 }`}
               >
-                <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                <img src={src} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
