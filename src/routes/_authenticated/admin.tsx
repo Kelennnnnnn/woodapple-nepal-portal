@@ -12,6 +12,7 @@ import {
   testimonialsQuery, currencyRatesQuery, trustStatsQuery,
   DEFAULT_RATES, DEFAULT_TRUST, type Testimonial, type CurrencyRates, type TrustStats,
 } from "@/lib/settings";
+import { TourImageUploader } from "@/components/tour-image-uploader";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — Woodapple Tours" }, { name: "robots", content: "noindex" }] }),
@@ -410,7 +411,7 @@ function TourEditor({ draft, onCancel, onSave, saving, error }: {
           <TextareaField label="Full description" value={d.full_description} onChange={(v) => set("full_description", v)} rows={4} />
           <TextareaField label="Included (one per line)" value={d.included.join("\n")} onChange={(v) => setArr("included", v)} rows={4} />
           <TextareaField label="Excluded (one per line)" value={d.excluded.join("\n")} onChange={(v) => setArr("excluded", v)} rows={3} />
-          <TourImageUploader value={d.images} onChange={(next) => set("images", next)} />
+          <TourImageUploader value={d.images} onChange={(next: string[]) => set("images", next)} />
 
           {/* Itinerary builder */}
           <div>
