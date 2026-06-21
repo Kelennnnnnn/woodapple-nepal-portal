@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Facebook, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { PHONE_NUMBER, EMAIL, ADDRESS, NTB_LICENSE, COMPANY_REG } from "@/lib/contact-info";
 
 export function SiteFooter() {
   return (
@@ -34,19 +35,19 @@ export function SiteFooter() {
         <div>
           <h4 className="font-display text-sm uppercase tracking-[0.18em] opacity-90">Visit us</h4>
           <ul className="mt-4 space-y-3 text-sm opacity-85">
-            <li className="flex gap-2">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Thamel Marg, Ward 26<br />Kathmandu 44600, Nepal</span>
-            </li>
+            {ADDRESS && (
+              <li className="flex gap-2">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="whitespace-pre-line">{ADDRESS}</span>
+              </li>
+            )}
             <li className="flex gap-2">
               <Phone className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>+977 1 4XX XXXX</span>
+              <a href={`tel:${PHONE_NUMBER}`} className="hover:underline">{PHONE_NUMBER}</a>
             </li>
             <li className="flex gap-2">
               <Mail className="mt-0.5 h-4 w-4 shrink-0" />
-              <a href="mailto:hello@woodappletours.com" className="hover:underline">
-                hello@woodappletours.com
-              </a>
+              <a href={`mailto:${EMAIL}`} className="hover:underline">{EMAIL}</a>
             </li>
           </ul>
         </div>
@@ -65,14 +66,18 @@ export function SiteFooter() {
         <div>
           <h4 className="font-display text-sm uppercase tracking-[0.18em] opacity-90">Credentials</h4>
           <ul className="mt-4 space-y-3 text-sm opacity-85">
-            <li>
-              <div className="text-xs uppercase opacity-70">Tourism License</div>
-              <div>NTB / TL / 0000 (placeholder)</div>
-            </li>
-            <li>
-              <div className="text-xs uppercase opacity-70">Company Registration</div>
-              <div>OCR / 00000 / 069/070 (placeholder)</div>
-            </li>
+            {NTB_LICENSE && (
+              <li>
+                <div className="text-xs uppercase opacity-70">Tourism License</div>
+                <div>{NTB_LICENSE}</div>
+              </li>
+            )}
+            {COMPANY_REG && (
+              <li>
+                <div className="text-xs uppercase opacity-70">Company Registration</div>
+                <div>{COMPANY_REG}</div>
+              </li>
+            )}
             <li>
               <div className="text-xs uppercase opacity-70">Member of</div>
               <div>TAAN · NMA · NTB</div>

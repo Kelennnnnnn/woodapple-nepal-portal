@@ -21,6 +21,8 @@ export function InquiryForm({ tourId, tourTitle }: { tourId?: string; tourTitle?
   const [v, setV] = useState<Values>({
     name: "", email: "", country: "", travel_dates: "", group_size: "", message: "",
   });
+  const [honeypot, setHoneypot] = useState("");
+  const [silentSuccess, setSilentSuccess] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -61,7 +63,7 @@ export function InquiryForm({ tourId, tourTitle }: { tourId?: string; tourTitle?
     onError: (e: Error) => setSubmitError(e.message || "Something went wrong. Please try again."),
   });
 
-  if (mut.isSuccess) {
+  if (mut.isSuccess || silentSuccess) {
     return (
       <div className="rounded-xl bg-primary/5 p-5 text-center ring-1 ring-primary/20">
         <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
@@ -76,6 +78,11 @@ export function InquiryForm({ tourId, tourTitle }: { tourId?: string; tourTitle?
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError(null);
+    // Honeypot: silently show success without inserting or emailing.
+    if (honeypot.trim() !== "") {
+      setSilentSuccess(true);
+      return;
+    }
     const parsed = schema.safeParse(v);
     if (!parsed.success) {
       const errs: Errors = {};
@@ -92,6 +99,13 @@ export function InquiryForm({ tourId, tourTitle }: { tourId?: string; tourTitle?
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+      {/* Honeypot field — hidden from real users, visible to bots */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", top: "auto", width: "1px", height: "1px", overflow: "hidden" }}>
+        <label>
+          Website
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+        </label>
+      </div>
       <Input label="Name" value={v.name} onChange={(x) => set("name", x)} required error={errors.name} />
       <Input label="Email" type="email" value={v.email} onChange={(x) => set("email", x)} required error={errors.email} />
       <div className="grid grid-cols-2 gap-3">

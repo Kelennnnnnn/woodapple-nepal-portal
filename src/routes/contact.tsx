@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sendInquiryEmail } from "@/lib/api/inquiry-email.functions";
+import { PHONE_NUMBER, WHATSAPP_NUMBER, EMAIL, ADDRESS, OFFICE_HOURS, NTB_LICENSE, COMPANY_REG } from "@/lib/contact-info";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -27,6 +28,11 @@ function ContactPage() {
     e.preventDefault();
     setError(null);
     const fd = new FormData(e.currentTarget);
+    // Honeypot: silently succeed without inserting/emailing if filled.
+    if (String(fd.get("website") || "").trim() !== "") {
+      setSent(true);
+      return;
+    }
     const name = String(fd.get("name") || "").trim();
     const email = String(fd.get("email") || "").trim();
     const country = String(fd.get("country") || "").trim();
@@ -95,6 +101,13 @@ function ContactPage() {
               </div>
             ) : (
               <div className="grid gap-5">
+                {/* Honeypot field — hidden from real users, visible to bots */}
+                <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", top: "auto", width: "1px", height: "1px", overflow: "hidden" }}>
+                  <label>
+                    Website
+                    <input type="text" name="website" tabIndex={-1} autoComplete="off" />
+                  </label>
+                </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field label="Full name" name="name" required />
                   <Field label="Email" name="email" type="email" required />
@@ -137,30 +150,35 @@ function ContactPage() {
 
           <aside className="space-y-4">
             {[
-              { icon: MapPin, title: "Visit us", body: "Thamel Marg, Ward 26\nKathmandu 44600, Nepal" },
-              { icon: Phone, title: "Call / WhatsApp", body: "+977 1 4XX XXXX\n+977 98XX XXXXXX" },
-              { icon: Mail, title: "Email", body: "hello@woodappletours.com" },
-              { icon: Clock, title: "Office hours", body: "Sun – Fri · 9:00 – 18:00 NPT" },
-            ].map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-2xl bg-card p-5 ring-1 ring-border/60">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="font-display text-sm font-semibold uppercase tracking-wider">{title}</div>
-                    <div className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{body}</div>
+              ADDRESS && { icon: MapPin, title: "Visit us", body: ADDRESS },
+              { icon: Phone, title: "Call / WhatsApp", body: `${PHONE_NUMBER}\n+${WHATSAPP_NUMBER} (WhatsApp)` },
+              { icon: Mail, title: "Email", body: EMAIL },
+              { icon: Clock, title: "Office hours", body: OFFICE_HOURS },
+            ].filter(Boolean).map((item) => {
+              const { icon: Icon, title, body } = item as { icon: typeof MapPin; title: string; body: string };
+              return (
+                <div key={title} className="rounded-2xl bg-card p-5 ring-1 ring-border/60">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="font-display text-sm font-semibold uppercase tracking-wider">{title}</div>
+                      <div className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{body}</div>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+            {(NTB_LICENSE || COMPANY_REG) && (
+              <div className="rounded-2xl bg-[color:var(--mountain)] p-5 text-mountain-foreground">
+                <div className="text-xs uppercase tracking-wider opacity-80">Credentials</div>
+                <div className="mt-2 space-y-1 text-sm">
+                  {NTB_LICENSE && <div>NTB License: {NTB_LICENSE}</div>}
+                  {COMPANY_REG && <div>Company Reg.: {COMPANY_REG}</div>}
+                </div>
               </div>
-            ))}
-            <div className="rounded-2xl bg-[color:var(--mountain)] p-5 text-mountain-foreground">
-              <div className="text-xs uppercase tracking-wider opacity-80">Credentials</div>
-              <div className="mt-2 space-y-1 text-sm">
-                <div>NTB License: TL / 0000</div>
-                <div>Company Reg.: OCR / 00000 / 069/070</div>
-              </div>
-            </div>
+            )}
           </aside>
         </div>
       </section>

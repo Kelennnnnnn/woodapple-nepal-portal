@@ -31,12 +31,10 @@ function AuthPage() {
   const { denied } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(
     denied ? "This account does not have admin access." : null,
   );
-  const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -52,29 +50,15 @@ function AuthPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setInfo(null);
     setLoading(true);
     try {
-      if (mode === "signin") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        if (!data.user || !(await isAdmin(data.user.id))) {
-          await supabase.auth.signOut();
-          throw new Error("This account does not have admin access.");
-        }
-        navigate({ to: "/admin", replace: true });
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/admin` },
-        });
-        if (error) throw error;
-        setInfo(
-          "Account created. If your project requires email confirmation, check your inbox. New accounts only get access if granted the admin role.",
-        );
-        setMode("signin");
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (!data.user || !(await isAdmin(data.user.id))) {
+        await supabase.auth.signOut();
+        throw new Error("This account does not have admin access.");
       }
+      navigate({ to: "/admin", replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -90,7 +74,7 @@ function AuthPage() {
         </div>
         <h1 className="mt-4 font-display text-2xl font-semibold">Admin sign in</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Restricted area. {mode === "signin" ? "Sign in to manage tours." : "Create the first admin account."}
+          Restricted area. Sign in to manage tours.
         </p>
 
         <form onSubmit={submit} className="mt-6 space-y-4">
@@ -109,22 +93,14 @@ function AuthPage() {
             />
           </label>
           {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-          {info && <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{info}</p>}
           <button
             type="submit" disabled={loading}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {mode === "signin" ? "Sign in" : "Create account"}
+            Sign in
           </button>
         </form>
-
-        <button
-          onClick={() => { setMode((m) => (m === "signin" ? "signup" : "signin")); setError(null); setInfo(null); }}
-          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-primary"
-        >
-          {mode === "signin" ? "First-time setup? Create the admin account." : "Already have an account? Sign in"}
-        </button>
 
         <div className="mt-6 border-t border-border pt-4 text-center">
           <Link to="/" className="text-xs text-muted-foreground hover:text-primary">← Back to website</Link>
