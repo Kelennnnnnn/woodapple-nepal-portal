@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { sendInquiryEmail } from "@/lib/api/inquiry-email.functions";
+import { PHONE_NUMBER, WHATSAPP_NUMBER, EMAIL, ADDRESS, OFFICE_HOURS, NTB_LICENSE, COMPANY_REG } from "@/lib/contact-info";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
