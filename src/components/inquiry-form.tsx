@@ -99,6 +99,13 @@ export function InquiryForm({ tourId, tourTitle }: { tourId?: string; tourTitle?
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+      {/* Honeypot field — hidden from real users, visible to bots */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", top: "auto", width: "1px", height: "1px", overflow: "hidden" }}>
+        <label>
+          Website
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+        </label>
+      </div>
       <Input label="Name" value={v.name} onChange={(x) => set("name", x)} required error={errors.name} />
       <Input label="Email" type="email" value={v.email} onChange={(x) => set("email", x)} required error={errors.email} />
       <div className="grid grid-cols-2 gap-3">
